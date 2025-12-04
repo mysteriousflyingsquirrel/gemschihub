@@ -4,6 +4,7 @@ import App from './App.tsx'
 import { AuthProvider } from './contexts/AuthContext.tsx'
 import { InfoProvider } from './contexts/InfoContext.tsx'
 import { PlayersProvider } from './contexts/PlayersContext.tsx'
+import { EventsProvider } from './contexts/EventsContext.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary.tsx'
 import './index.css'
 
@@ -19,7 +20,9 @@ ReactDOM.createRoot(rootElement).render(
       <AuthProvider>
         <InfoProvider>
           <PlayersProvider>
-            <App />
+            <EventsProvider>
+              <App />
+            </EventsProvider>
           </PlayersProvider>
         </InfoProvider>
       </AuthProvider>
