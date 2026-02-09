@@ -204,24 +204,24 @@ export const Admin: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Titel *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Titel</label>
                 <input type="text" value={newEventTitle} onChange={e => setNewEventTitle(e.target.value)} placeholder="Event-Titel" className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Datum *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Datum</label>
                 <input type="date" value={newEventDate} onChange={e => setNewEventDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Uhrzeit *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Uhrzeit</label>
                 <input type="time" value={newEventTime} onChange={e => setNewEventTime(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Ort *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Ort</label>
                 <input type="text" value={newEventLocation} onChange={e => setNewEventLocation(e.target.value)} placeholder="Ort" className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
               </div>
               {newEventType === 'Interclub' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Gegner *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Gegner</label>
                   <input type="text" value={newEventOpponent} onChange={e => setNewEventOpponent(e.target.value)} placeholder="Gegner" className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
                 </div>
               )}
@@ -269,7 +269,7 @@ export const Admin: React.FC = () => {
             <h3 className="text-lg font-semibold mb-4">Neuen Spieler hinzufügen</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                 <input type="text" value={newPlayerName} onChange={e => setNewPlayerName(e.target.value)} placeholder="Name" className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
               </div>
               <div>
