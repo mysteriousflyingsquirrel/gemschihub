@@ -154,6 +154,7 @@ export const Spieler: React.FC = () => {
                       { label: 'Gewinnrate Doppel', value: selectedStats.doublesWinRate, weight: '10%' },
                       { label: 'Training-Anwesenheit', value: selectedStats.trainingAttendanceRate, weight: '10%' },
                       { label: 'Spirit-Event-Anwesenheit', value: selectedStats.spiritEventAttendanceRate, weight: '10%' },
+                      { label: 'Spirit', value: selectedStats.spiritValue, weight: '40%' },
                     ].map(stat => (
                       <div key={stat.label} className="bg-white border border-gray-200 rounded-lg p-4">
                         <div className="flex items-center justify-between mb-2">
@@ -171,23 +172,6 @@ export const Spieler: React.FC = () => {
                         </div>
                       </div>
                     ))}
-
-                    {/* Spirit (40%) */}
-                    <div className="bg-white border border-gray-200 rounded-lg p-4 md:col-span-2">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-chnebel-black">Spirit</span>
-                        <span className="text-sm font-semibold" style={{ color: getScoreColor(selectedStats.spiritValue) }}>
-                          {selectedStats.spiritValue.toFixed(1)}%
-                        </span>
-                      </div>
-                      <div className="text-xs text-gray-500 mb-2">(40%)</div>
-                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all duration-500"
-                          style={{ width: `${selectedStats.spiritValue}%`, backgroundColor: getScoreColor(selectedStats.spiritValue) }}
-                        />
-                      </div>
-                    </div>
                   </div>
 
                   {/* Gemschi Score */}
