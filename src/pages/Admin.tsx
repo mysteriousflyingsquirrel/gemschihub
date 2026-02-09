@@ -118,10 +118,10 @@ export const Admin: React.FC = () => {
   };
 
   const handleAddPlayer = () => {
-    if (!newPlayerName.trim()) return;
+    if (!newPlayerName.trim() || !newPlayerAlias.trim()) return;
     addPlayer({
       name: newPlayerName.trim(),
-      alias: newPlayerAlias.trim() || undefined,
+      alias: newPlayerAlias.trim(),
       role: newPlayerRole,
       gemschigrad: newPlayerGrad,
       klassierung: newPlayerKlass,
@@ -274,7 +274,7 @@ export const Admin: React.FC = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Alias</label>
-                <input type="text" value={newPlayerAlias} onChange={e => setNewPlayerAlias(e.target.value)} placeholder="Alias (optional)" className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
+                <input type="text" value={newPlayerAlias} onChange={e => setNewPlayerAlias(e.target.value)} placeholder="Alias" className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Rolle</label>
@@ -295,7 +295,7 @@ export const Admin: React.FC = () => {
                 </select>
               </div>
               <div className="md:col-span-2">
-                <button onClick={handleAddPlayer} disabled={!newPlayerName.trim()} className="w-full px-4 py-2 bg-chnebel-red text-white rounded font-semibold hover:bg-[#c4161e] disabled:opacity-50">+ Spieler hinzufügen</button>
+                <button onClick={handleAddPlayer} disabled={!newPlayerName.trim() || !newPlayerAlias.trim()} className="w-full px-4 py-2 bg-chnebel-red text-white rounded font-semibold hover:bg-[#c4161e] disabled:opacity-50">+ Spieler hinzufügen</button>
               </div>
             </div>
           </div>
