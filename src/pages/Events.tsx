@@ -47,8 +47,16 @@ export const Events: React.FC = () => {
 
   const filteredEvents = useMemo(() => {
     const filtered = activeTab === 'all' ? events : events.filter(e => e.type === activeTab);
-    return [...filtered].sort((a, b) => new Date(b.startDateTime).getTime() - new Date(a.startDateTime).getTime());
+    // Sort ascending: oldest first, newest last
+    return [...filtered].sort((a, b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime());
   }, [events, activeTab]);
+
+  // Find the next upcoming event (first event whose start is in the future)
+  const nextEventId = useMemo(() => {
+    const now = new Date().getTime();
+    const upcoming = filteredEvents.find(e => new Date(e.startDateTime).getTime() > now);
+    return upcoming?.id || null;
+  }, [filteredEvents]);
 
   const formatDate = (iso: string) => {
     const d = new Date(iso);
@@ -99,19 +107,31 @@ export const Events: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredEvents.map((event, index) => {
+            {filteredEvents.map((event) => {
               const status = deriveEventStatus(event.startDateTime);
               const statusBadge = getStatusBadge(status);
+              const isNext = event.id === nextEventId;
               return (
                 <tr
                   key={event.id}
                   onClick={() => setSelectedEvent(event)}
-                  className={`border-b border-gray-200 hover:bg-chnebel-gray/50 transition-colors cursor-pointer ${
-                    index === filteredEvents.length - 1 ? '' : 'border-b'
+                  className={`border-b border-gray-200 transition-colors cursor-pointer ${
+                    isNext
+                      ? 'bg-chnebel-red/10 border-l-4 border-l-chnebel-red hover:bg-chnebel-red/20 font-semibold'
+                      : 'hover:bg-chnebel-gray/50'
                   }`}
                 >
                   <td className="px-6 py-4 text-xl">{getEventTypeIcon(event.type)}</td>
-                  <td className="px-6 py-4 text-chnebel-black font-medium">{event.title}</td>
+                  <td className="px-6 py-4 text-chnebel-black font-medium">
+                    <div className="flex items-center gap-2">
+                      {event.title}
+                      {isNext && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-chnebel-red text-white uppercase tracking-wide">
+                          Next
+                        </span>
+                      )}
+                    </div>
+                  </td>
                   <td className="px-6 py-4 text-chnebel-black">{formatDate(event.startDateTime)}</td>
                   <td className="px-6 py-4 text-chnebel-black">{event.location || '-'}</td>
                   <td className="px-6 py-4">
