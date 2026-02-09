@@ -14,7 +14,6 @@ export interface Player {
   gemschigrad: Gemschigrad;
   klassierung: Klassierung;
   profilePictureUrl: string | null; // URL or null (upload deferred to Firebase Storage)
-  introduction?: string; // Short free-text introduction
   email?: string;
   phone?: string;
   joinDate?: string;

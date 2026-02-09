@@ -142,13 +142,6 @@ export const Spieler: React.FC = () => {
             </div>
 
             <div className="p-6">
-              {/* Introduction */}
-              {selectedPlayer.introduction && (
-                <section className="mb-6">
-                  <p className="text-chnebel-black italic">{selectedPlayer.introduction}</p>
-                </section>
-              )}
-
               {/* Seasonal Stats */}
               {selectedStats && (
                 <section>
