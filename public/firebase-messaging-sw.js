@@ -9,12 +9,12 @@ importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-comp
 // Firebase config — keep in sync with firebaseConfig.ts
 // These values are NOT secrets (they are public identifiers).
 firebase.initializeApp({
-  apiKey: self.__FIREBASE_CONFIG__?.apiKey || '',
-  authDomain: self.__FIREBASE_CONFIG__?.authDomain || '',
-  projectId: self.__FIREBASE_CONFIG__?.projectId || '',
-  storageBucket: self.__FIREBASE_CONFIG__?.storageBucket || '',
-  messagingSenderId: self.__FIREBASE_CONFIG__?.messagingSenderId || '',
-  appId: self.__FIREBASE_CONFIG__?.appId || '',
+  apiKey: "AIzaSyClAfUw97U3wtOUKqIYwzdEfjSoUSyhTpo",
+  authDomain: "gemschihub.firebaseapp.com",
+  projectId: "gemschihub",
+  storageBucket: "gemschihub.firebasestorage.app",
+  messagingSenderId: "654765415480",
+  appId: "1:654765415480:web:5dce1aa3ae54e02a8a9acd",
 });
 
 const messaging = firebase.messaging();
