@@ -2,9 +2,12 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import { AuthProvider } from './contexts/AuthContext.tsx'
-import { InfoProvider } from './contexts/InfoContext.tsx'
-import { PlayersProvider } from './contexts/PlayersContext.tsx'
+import { SeasonsProvider } from './contexts/SeasonsContext.tsx'
 import { EventsProvider } from './contexts/EventsContext.tsx'
+import { PlayersProvider } from './contexts/PlayersContext.tsx'
+import { AttendanceProvider } from './contexts/AttendanceContext.tsx'
+import { SpiritProvider } from './contexts/SpiritContext.tsx'
+import { InfoProvider } from './contexts/InfoContext.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary.tsx'
 import './index.css'
 
@@ -18,15 +21,20 @@ ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <ErrorBoundary>
       <AuthProvider>
-        <InfoProvider>
+        <SeasonsProvider>
           <PlayersProvider>
             <EventsProvider>
-              <App />
+              <AttendanceProvider>
+                <SpiritProvider>
+                  <InfoProvider>
+                    <App />
+                  </InfoProvider>
+                </SpiritProvider>
+              </AttendanceProvider>
             </EventsProvider>
           </PlayersProvider>
-        </InfoProvider>
+        </SeasonsProvider>
       </AuthProvider>
     </ErrorBoundary>
   </React.StrictMode>,
 )
-

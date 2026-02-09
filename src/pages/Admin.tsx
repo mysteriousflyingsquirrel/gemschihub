@@ -1,1360 +1,536 @@
 import React, { useState } from 'react';
 import { PageTitle } from '../components/PageTitle';
-import { useInfo } from '../contexts/InfoContext';
+import { useSeasons } from '../contexts/SeasonsContext';
+import { useEvents } from '../contexts/EventsContext';
 import { usePlayers } from '../contexts/PlayersContext';
-import { useEvents, InterclubEvent, SinglesGame, DoublesGame } from '../contexts/EventsContext';
+import { useAttendance } from '../contexts/AttendanceContext';
+import { useSpirit } from '../contexts/SpiritContext';
+import { useInfo } from '../contexts/InfoContext';
+import { useAuth } from '../contexts/AuthContext';
+import { AppEvent, EventType, SinglesGame, DoublesGame, createEmptySinglesGames, createEmptyDoublesGames } from '../types/event';
 import { Gemschigrad, Klassierung, PlayerRole } from '../types/player';
 
 const gemschigrads: Gemschigrad[] = ['Ehrengemschi', 'Kuttengemschi', 'Bandanagemschi', 'Gitzi'];
 const klassierungen: Klassierung[] = ['N1', 'N2', 'N3', 'N4', 'R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9'];
 const playerRoles: PlayerRole[] = ['Spieler', 'Captain', 'CEO of Patchio'];
+const eventTypes: EventType[] = ['Training', 'Interclub', 'Spirit'];
 
-const getRoleEmoji = (role: PlayerRole): string => {
-  switch (role) {
-    case 'Captain':
-      return '👑';
-    case 'CEO of Patchio':
-      return '🌮';
-    default:
-      return '';
-  }
-};
-
-const getGemschigradColor = (grad: Gemschigrad) => {
-  switch (grad) {
-    case 'Ehrengemschi':
-      return 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-yellow-900';
-    case 'Kuttengemschi':
-      return 'bg-gradient-to-r from-blue-400 to-blue-600 text-blue-900';
-    case 'Bandanagemschi':
-      return 'bg-gradient-to-r from-green-400 to-green-600 text-green-900';
-    case 'Gitzi':
-      return 'bg-gradient-to-r from-purple-400 to-purple-600 text-purple-900';
-  }
+const CollapsibleSection: React.FC<{ title: string; icon: string; children: React.ReactNode }> = ({ title, icon, children }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <section className="bg-white rounded-lg p-6 shadow-sm">
+      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between text-left mb-4">
+        <h2 className="text-2xl font-semibold text-chnebel-black flex items-center gap-2">
+          <span className="text-2xl">{icon}</span> {title}
+        </h2>
+        <svg className={`w-6 h-6 text-chnebel-black transition-transform duration-200 ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${open ? 'max-h-[10000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+        {children}
+      </div>
+    </section>
+  );
 };
 
 export const Admin: React.FC = () => {
-  const { tenueData, addTenueItem, updateTenueItem, removeTenueItem } = useInfo();
-  const { players, addPlayer, updatePlayer, removePlayer } = usePlayers();
+  const { isAdmin } = useAuth();
+  const { seasons, addSeason, setActiveSeason, removeSeason, selectedSeasonId } = useSeasons();
   const { events, addEvent, updateEvent, removeEvent } = useEvents();
-  const [editingTenue, setEditingTenue] = useState<{ gemschigrad: Gemschigrad; id: string } | null>(null);
-  const [editingPlayer, setEditingPlayer] = useState<string | null>(null);
-  const [editingEvent, setEditingEvent] = useState<string | null>(null);
-  const [newTenueText, setNewTenueText] = useState<{ [key in Gemschigrad]?: string }>({});
-  const [openSection, setOpenSection] = useState<string | null>(null);
-  const [openGemschigrad, setOpenGemschigrad] = useState<Gemschigrad | null>(null);
-  
-  // Event results modal state
-  const [resultsModalEvent, setResultsModalEvent] = useState<InterclubEvent | null>(null);
-  const [resultsStep, setResultsStep] = useState<1 | 2 | 3>(1);
-  const [selectedAttendees, setSelectedAttendees] = useState<string[]>([]);
-  const [singlesGamesData, setSinglesGamesData] = useState<SinglesGame[]>([]);
-  const [doublesGamesData, setDoublesGamesData] = useState<DoublesGame[]>([]);
-  
-  // New player form state
+  const { players, addPlayer, removePlayer } = usePlayers();
+  const { getEventAttendees, setEventAttendance } = useAttendance();
+  const { spirit, setPlayerSpirit } = useSpirit();
+  const { tenueData, addTenueItem, updateTenueItem, removeTenueItem } = useInfo();
+
+  // --- Season form ---
+  const [newSeasonName, setNewSeasonName] = useState('');
+
+  // --- Event form ---
+  const [newEventType, setNewEventType] = useState<EventType>('Training');
+  const [newEventTitle, setNewEventTitle] = useState('');
+  const [newEventDate, setNewEventDate] = useState('');
+  const [newEventTime, setNewEventTime] = useState('18:00');
+  const [newEventLocation, setNewEventLocation] = useState('');
+  const [newEventOpponent, setNewEventOpponent] = useState('');
+
+  // --- Player form ---
   const [newPlayerName, setNewPlayerName] = useState('');
   const [newPlayerAlias, setNewPlayerAlias] = useState('');
   const [newPlayerRole, setNewPlayerRole] = useState<PlayerRole>('Spieler');
-  const [newPlayerGemschigrad, setNewPlayerGemschigrad] = useState<Gemschigrad>('Gitzi');
-  const [newPlayerKlassierung, setNewPlayerKlassierung] = useState<Klassierung>('R9');
-  const [newPlayerInvitationCode, setNewPlayerInvitationCode] = useState('');
+  const [newPlayerGrad, setNewPlayerGrad] = useState<Gemschigrad>('Gitzi');
+  const [newPlayerKlass, setNewPlayerKlass] = useState<Klassierung>('R9');
+  const [newPlayerIntro, setNewPlayerIntro] = useState('');
 
-  // New event form state
-  const [newEventDatum, setNewEventDatum] = useState('');
-  const [newEventOrt, setNewEventOrt] = useState('');
-  const [newEventGegner, setNewEventGegner] = useState('');
+  // --- Attendance modal ---
+  const [attendanceEventId, setAttendanceEventId] = useState<string | null>(null);
+  const [attendanceSelection, setAttendanceSelection] = useState<string[]>([]);
 
-  const isTenueExpanded = openSection === 'tenue';
-  const isSpielerExpanded = openSection === 'spieler';
-  const isEventsExpanded = openSection === 'events';
+  // --- Results modal ---
+  const [resultsEvent, setResultsEvent] = useState<AppEvent | null>(null);
+  const [resultsStep, setResultsStep] = useState<1 | 2 | 3>(1);
+  const [resultsSingles, setResultsSingles] = useState<SinglesGame[]>([]);
+  const [resultsDoubles, setResultsDoubles] = useState<DoublesGame[]>([]);
 
-  const toggleSection = (section: 'tenue' | 'spieler' | 'events') => {
-    setOpenSection(openSection === section ? null : section);
-  };
+  // --- Tenue editing ---
+  const [editingTenue, setEditingTenue] = useState<{ grad: Gemschigrad; id: string } | null>(null);
+  const [newTenueText, setNewTenueText] = useState<Record<string, string>>({});
 
-  const toggleGemschigrad = (gemschigrad: Gemschigrad) => {
-    setOpenGemschigrad(openGemschigrad === gemschigrad ? null : gemschigrad);
-  };
+  if (!isAdmin) {
+    return <div className="p-8 text-center text-gray-500">Kein Zugriff. Bitte als Captain anmelden.</div>;
+  }
 
-  const handleAddTenueItem = (gemschigrad: Gemschigrad) => {
-    const text = newTenueText[gemschigrad];
-    if (text && text.trim()) {
-      addTenueItem(gemschigrad, text.trim());
-      setNewTenueText({ ...newTenueText, [gemschigrad]: '' });
-    }
-  };
-
-  const handleUpdateTenueItem = (gemschigrad: Gemschigrad, id: string, text: string) => {
-    updateTenueItem(gemschigrad, id, text);
-    setEditingTenue(null);
-  };
-
-
-  const handleAddPlayer = () => {
-    if (newPlayerName.trim()) {
-      addPlayer({
-        name: newPlayerName.trim(),
-        alias: newPlayerAlias.trim() || undefined,
-        role: newPlayerRole,
-        gemschigrad: newPlayerGemschigrad,
-        klassierung: newPlayerKlassierung,
-        email: undefined,
-        phone: undefined,
-        joinDate: undefined,
-      });
-      setNewPlayerName('');
-      setNewPlayerAlias('');
-      setNewPlayerRole('Spieler');
-      setNewPlayerGemschigrad('Gitzi');
-      setNewPlayerKlassierung('R9');
-      setNewPlayerInvitationCode('');
-    }
-  };
-
-  const handleUpdatePlayer = (id: string, field: string, value: any) => {
-    updatePlayer(id, { [field]: value });
-    if (field !== 'role') {
-      setEditingPlayer(null);
-    }
+  // --- Handlers ---
+  const handleAddSeason = () => {
+    if (!newSeasonName.trim()) return;
+    addSeason(newSeasonName.trim());
+    setNewSeasonName('');
   };
 
   const handleAddEvent = () => {
-    if (newEventDatum.trim() && newEventOrt.trim() && newEventGegner.trim()) {
-      const emptySingles = Array.from({ length: 6 }, (_, i) => ({
-        gameNumber: i + 1,
-        playerId: null,
-        set1: null,
-        set2: null,
-        set3: null,
-      }));
-      const emptyDoubles = Array.from({ length: 3 }, (_, i) => ({
-        gameNumber: i + 7,
-        player1Id: null,
-        player2Id: null,
-        set1: null,
-        set2: null,
-        set3: null,
-      }));
-      addEvent({
-        datum: newEventDatum.trim(),
-        ort: newEventOrt.trim(),
-        gegner: newEventGegner.trim(),
-        status: 'Offen',
-        attendees: [],
-        singlesGames: emptySingles,
-        doublesGames: emptyDoubles,
+    if (!newEventTitle.trim() || !newEventDate || !selectedSeasonId) return;
+    const startDateTime = new Date(`${newEventDate}T${newEventTime}`).toISOString();
+    const eventData: Omit<AppEvent, 'id'> = {
+      seasonId: selectedSeasonId,
+      type: newEventType,
+      title: newEventTitle.trim(),
+      startDateTime,
+      location: newEventLocation.trim() || undefined,
+    };
+    if (newEventType === 'Interclub' && newEventOpponent.trim()) {
+      eventData.interclub = {
+        opponent: newEventOpponent.trim(),
+        matchStatus: 'Offen',
+        singlesGames: createEmptySinglesGames(),
+        doublesGames: createEmptyDoublesGames(),
         totalScore: { ourScore: 0, opponentScore: 0 },
-        score: undefined,
-      });
-      setNewEventDatum('');
-      setNewEventOrt('');
-      setNewEventGegner('');
+      };
     }
+    addEvent(eventData);
+    setNewEventTitle('');
+    setNewEventDate('');
+    setNewEventLocation('');
+    setNewEventOpponent('');
   };
 
-  const handleUpdateEvent = (id: string, field: string, value: any) => {
-    updateEvent(id, { [field]: value });
-    setEditingEvent(null);
+  const handleAddPlayer = () => {
+    if (!newPlayerName.trim()) return;
+    addPlayer({
+      name: newPlayerName.trim(),
+      alias: newPlayerAlias.trim() || undefined,
+      role: newPlayerRole,
+      gemschigrad: newPlayerGrad,
+      klassierung: newPlayerKlass,
+      introduction: newPlayerIntro.trim() || undefined,
+    });
+    setNewPlayerName('');
+    setNewPlayerAlias('');
+    setNewPlayerRole('Spieler');
+    setNewPlayerGrad('Gitzi');
+    setNewPlayerKlass('R9');
+    setNewPlayerIntro('');
   };
 
-  const handleOpenResultsModal = (event: InterclubEvent) => {
-    setResultsModalEvent(event);
+  const openAttendanceModal = (eventId: string) => {
+    const existing = getEventAttendees(eventId).map(a => a.playerId);
+    setAttendanceSelection(existing);
+    setAttendanceEventId(eventId);
+  };
+
+  const saveAttendance = () => {
+    if (!attendanceEventId || !selectedSeasonId) return;
+    setEventAttendance(attendanceEventId, selectedSeasonId, attendanceSelection);
+    setAttendanceEventId(null);
+  };
+
+  const openResultsModal = (event: AppEvent) => {
+    setResultsEvent(event);
     setResultsStep(1);
-    setSelectedAttendees(event.attendees.map(a => a.playerId));
-    // Initialize games data with empty games if not present
-    const emptySingles = Array.from({ length: 6 }, (_, i) => ({
-      gameNumber: i + 1,
-      playerId: null,
-      set1: null,
-      set2: null,
-      set3: null,
-    }));
-    const emptyDoubles = Array.from({ length: 3 }, (_, i) => ({
-      gameNumber: i + 7,
-      player1Id: null,
-      player2Id: null,
-      set1: null,
-      set2: null,
-      set3: null,
-    }));
-    setSinglesGamesData(event.singlesGames && event.singlesGames.length > 0 ? [...event.singlesGames] : emptySingles);
-    setDoublesGamesData(event.doublesGames && event.doublesGames.length > 0 ? [...event.doublesGames] : emptyDoubles);
+    setResultsSingles(event.interclub?.singlesGames ? [...event.interclub.singlesGames] : createEmptySinglesGames());
+    setResultsDoubles(event.interclub?.doublesGames ? [...event.interclub.doublesGames] : createEmptyDoublesGames());
   };
 
-  const handleCloseResultsModal = () => {
-    setResultsModalEvent(null);
-    setResultsStep(1);
-    setSelectedAttendees([]);
-    setSinglesGamesData([]);
-    setDoublesGamesData([]);
-  };
-
-  const handleNextStep = () => {
-    if (resultsStep === 1) {
-      if (selectedAttendees.length === 0) {
-        alert('Bitte wählen Sie mindestens einen Spieler aus.');
-        return;
-      }
-      setResultsStep(2);
-    } else if (resultsStep === 2) {
-      setResultsStep(3);
-    }
-  };
-
-  const handleSaveResults = () => {
-    if (!resultsModalEvent) return;
-    
-    // Calculate attendees from games
-    const attendeeMap = new Map<string, { singlesPlayed: 0 | 1; singlesWon: 0 | 1; doublesPlayed: 0 | 1; doublesWon: 0 | 1 }>();
-    
-    // Process singles games
-    singlesGamesData.forEach(game => {
-      if (game.playerId) {
-        const winner = calculateGameWinner(game);
-        if (!attendeeMap.has(game.playerId)) {
-          attendeeMap.set(game.playerId, { singlesPlayed: 0, singlesWon: 0, doublesPlayed: 0, doublesWon: 0 });
-        }
-        const attendee = attendeeMap.get(game.playerId)!;
-        attendee.singlesPlayed = 1;
-        if (winner === 'our') attendee.singlesWon = 1;
-      }
+  const saveResults = () => {
+    if (!resultsEvent?.interclub) return;
+    updateEvent(resultsEvent.id, {
+      interclub: {
+        ...resultsEvent.interclub,
+        singlesGames: resultsSingles,
+        doublesGames: resultsDoubles,
+      },
     });
-    
-    // Process doubles games
-    doublesGamesData.forEach((game: DoublesGame) => {
-      if (game.player1Id && game.player2Id) {
-        const winner = calculateGameWinner(game);
-        [game.player1Id, game.player2Id].forEach(playerId => {
-          if (!attendeeMap.has(playerId)) {
-            attendeeMap.set(playerId, { singlesPlayed: 0, singlesWon: 0, doublesPlayed: 0, doublesWon: 0 });
-          }
-          const attendee = attendeeMap.get(playerId)!;
-          attendee.doublesPlayed = 1;
-          if (winner === 'our') attendee.doublesWon = 1;
-        });
-      }
-    });
-    
-    const attendees = Array.from(attendeeMap.entries()).map(([playerId, stats]) => ({
-      playerId,
-      ...stats,
-    }));
-    
-    // Calculate total score
-    let ourScore = 0;
-    let opponentScore = 0;
-    [...singlesGamesData, ...doublesGamesData].forEach((game: SinglesGame | DoublesGame) => {
-      const winner = calculateGameWinner(game);
-      if (winner === 'our') ourScore++;
-      else if (winner === 'opponent') opponentScore++;
-    });
-    
-    // Calculate status
-    const allGames: (SinglesGame | DoublesGame)[] = [...singlesGamesData, ...doublesGamesData];
-    const gamesWithResults = allGames.filter((g: SinglesGame | DoublesGame) => g.set1 !== null);
-    let status: 'Offen' | 'Am Spielen' | 'Gespielt' = 'Offen';
-    if (gamesWithResults.length === 0) status = 'Offen';
-    else if (gamesWithResults.length < 9) status = 'Am Spielen';
-    else status = 'Gespielt';
-    
-    updateEvent(resultsModalEvent.id, {
-      attendees,
-      singlesGames: singlesGamesData,
-      doublesGames: doublesGamesData,
-      totalScore: { ourScore, opponentScore },
-      status,
-      score: `${ourScore}:${opponentScore}`,
-    });
-    
-    handleCloseResultsModal();
-  };
-
-  const calculateGameWinner = (game: SinglesGame | DoublesGame): 'our' | 'opponent' | null => {
-    if (!game.set1) return null;
-    
-    let ourWins = 0;
-    let opponentWins = 0;
-    
-    if (game.set1) {
-      if (game.set1.ourScore > game.set1.opponentScore) ourWins++;
-      else if (game.set1.opponentScore > game.set1.ourScore) opponentWins++;
-    }
-    if (game.set2) {
-      if (game.set2.ourScore > game.set2.opponentScore) ourWins++;
-      else if (game.set2.opponentScore > game.set2.ourScore) opponentWins++;
-    }
-    if (game.set3) {
-      if (game.set3.ourScore > game.set3.opponentScore) ourWins++;
-      else if (game.set3.opponentScore > game.set3.ourScore) opponentWins++;
-    }
-    
-    if (ourWins >= 2) return 'our';
-    if (opponentWins >= 2) return 'opponent';
-    return null;
-  };
-
-  const getStatusColor = (status: 'Offen' | 'Am Spielen' | 'Gespielt') => {
-    switch (status) {
-      case 'Offen':
-        return 'bg-gray-100 text-gray-700';
-      case 'Am Spielen':
-        return 'bg-yellow-100 text-yellow-700';
-      case 'Gespielt':
-        return 'bg-green-100 text-green-700';
-    }
+    setResultsEvent(null);
   };
 
   return (
     <>
       <PageTitle>Admin</PageTitle>
       <div className="space-y-8">
-        {/* Tenue Management */}
-        <section className="bg-white rounded-lg p-6 shadow-sm">
-          <button
-            onClick={() => toggleSection('tenue')}
-            className="w-full flex items-center justify-between text-left mb-6"
-          >
-            <h2 className="text-2xl font-semibold text-chnebel-black flex items-center gap-2">
-              <span className="text-2xl">👕</span>
-              Tenue verwalten
-            </h2>
-            <svg
-              className={`w-6 h-6 text-chnebel-black transition-transform duration-200 ${isTenueExpanded ? 'rotate-180' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          <div
-            className={`overflow-hidden transition-all duration-300 ease-in-out ${
-              isTenueExpanded ? 'max-h-[5000px] opacity-100' : 'max-h-0 opacity-0'
-            }`}
-          >
-            <div className="space-y-8">
-              {gemschigrads.map((gemschigrad) => (
-                <div key={gemschigrad} className="border-b border-gray-200 pb-6 last:border-b-0 last:pb-0">
-                  <button
-                    onClick={() => toggleGemschigrad(gemschigrad)}
-                    className="w-full flex items-center justify-between text-left mb-4"
-                  >
-                    <h3 className="font-semibold text-lg flex items-center gap-2">
-                      <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getGemschigradColor(gemschigrad)}`}>
-                        {gemschigrad}
-                      </span>
-                    </h3>
-                    <svg
-                      className={`w-5 h-5 text-gray-600 transition-transform duration-200 ${openGemschigrad === gemschigrad ? 'rotate-180' : ''}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                  <div
-                    className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                      openGemschigrad === gemschigrad ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
-                    }`}
-                  >
-                    <div className="space-y-2 mb-4">
-                  {tenueData[gemschigrad].map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center gap-3 p-3 bg-chnebel-gray rounded-lg"
-                    >
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-chnebel-red flex items-center justify-center text-white font-semibold">
-                        {item.order}
-                      </div>
-                      {editingTenue?.gemschigrad === gemschigrad && editingTenue?.id === item.id ? (
-                        <div className="flex-1 flex items-center gap-2">
-                          <input
-                            type="text"
-                            defaultValue={item.text}
-                            onBlur={(e) => handleUpdateTenueItem(gemschigrad, item.id, e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                handleUpdateTenueItem(gemschigrad, item.id, e.currentTarget.value);
-                              } else if (e.key === 'Escape') {
-                                setEditingTenue(null);
-                              }
-                            }}
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                            autoFocus
-                          />
-                        </div>
+
+        {/* === SEASONS === */}
+        <CollapsibleSection title="Saisons verwalten" icon="📆">
+          <div className="flex gap-2 mb-4">
+            <input type="text" value={newSeasonName} onChange={e => setNewSeasonName(e.target.value)} placeholder="Neue Saison (z.B. Interclub 2025/2026)" className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
+            <button onClick={handleAddSeason} disabled={!newSeasonName.trim()} className="px-4 py-2 bg-chnebel-red text-white rounded font-semibold hover:bg-[#c4161e] disabled:opacity-50">+ Hinzufügen</button>
+          </div>
+          <div className="space-y-2">
+            {seasons.map(s => (
+              <div key={s.id} className="flex items-center gap-3 p-3 bg-chnebel-gray rounded-lg">
+                <span className="flex-1 font-medium">{s.name}</span>
+                {s.isActive ? (
+                  <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">Aktiv</span>
+                ) : (
+                  <button onClick={() => setActiveSeason(s.id)} className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-xs font-semibold hover:bg-blue-200">Aktivieren</button>
+                )}
+                {!s.isActive && (
+                  <button onClick={() => { if (window.confirm(`Saison "${s.name}" löschen?`)) removeSeason(s.id); }} className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600">🗑️</button>
+                )}
+              </div>
+            ))}
+          </div>
+        </CollapsibleSection>
+
+        {/* === EVENTS === */}
+        <CollapsibleSection title="Events verwalten" icon="📅">
+          <div className="bg-chnebel-gray rounded-lg p-4 mb-6">
+            <h3 className="text-lg font-semibold mb-4">Neues Event</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Typ</label>
+                <select value={newEventType} onChange={e => setNewEventType(e.target.value as EventType)} className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red">
+                  {eventTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Titel *</label>
+                <input type="text" value={newEventTitle} onChange={e => setNewEventTitle(e.target.value)} placeholder="Event-Titel" className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Datum *</label>
+                <input type="date" value={newEventDate} onChange={e => setNewEventDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Uhrzeit</label>
+                <input type="time" value={newEventTime} onChange={e => setNewEventTime(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Ort</label>
+                <input type="text" value={newEventLocation} onChange={e => setNewEventLocation(e.target.value)} placeholder="Ort" className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
+              </div>
+              {newEventType === 'Interclub' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Gegner *</label>
+                  <input type="text" value={newEventOpponent} onChange={e => setNewEventOpponent(e.target.value)} placeholder="Gegner" className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
+                </div>
+              )}
+              <div className="md:col-span-2">
+                <button onClick={handleAddEvent} disabled={!newEventTitle.trim() || !newEventDate} className="w-full px-4 py-2 bg-chnebel-red text-white rounded font-semibold hover:bg-[#c4161e] disabled:opacity-50">+ Event hinzufügen</button>
+              </div>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {events.map(event => (
+              <div key={event.id} className="flex items-center gap-3 p-4 bg-chnebel-gray rounded-lg border border-gray-200">
+                <div className="flex-1">
+                  <div className="font-medium text-chnebel-black">{event.title}</div>
+                  <div className="text-sm text-gray-500">{event.type} · {new Date(event.startDateTime).toLocaleDateString('de-CH')} · {event.location || '-'}</div>
+                  {event.interclub && <div className="text-sm text-gray-500">vs. {event.interclub.opponent} · {event.interclub.matchStatus} · {event.interclub.totalScore.ourScore}:{event.interclub.totalScore.opponentScore}</div>}
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => openAttendanceModal(event.id)} className="px-3 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600" title="Anwesenheit">👥</button>
+                  {event.interclub && (
+                    <button onClick={() => openResultsModal(event)} className="px-3 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600" title="Ergebnisse">📊</button>
+                  )}
+                  {event.interclub && (
+                    <button
+                      onClick={() => {
+                        const link = prompt('Instagram Link:', event.interclub?.instagramLink || '');
+                        if (link !== null && event.interclub) {
+                          updateEvent(event.id, { interclub: { ...event.interclub, instagramLink: link || undefined } });
+                        }
+                      }}
+                      className="px-3 py-1 bg-purple-500 text-white rounded text-xs hover:bg-purple-600"
+                      title="Instagram Link"
+                    >📸</button>
+                  )}
+                  <button onClick={() => { if (window.confirm(`Event "${event.title}" löschen?`)) removeEvent(event.id); }} className="px-3 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600" title="Löschen">🗑️</button>
+                </div>
+              </div>
+            ))}
+            {events.length === 0 && <div className="text-gray-500 text-center py-4">Keine Events in dieser Saison</div>}
+          </div>
+        </CollapsibleSection>
+
+        {/* === PLAYERS === */}
+        <CollapsibleSection title="Spieler verwalten" icon="👥">
+          <div className="bg-chnebel-gray rounded-lg p-4 mb-6">
+            <h3 className="text-lg font-semibold mb-4">Neuen Spieler hinzufügen</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                <input type="text" value={newPlayerName} onChange={e => setNewPlayerName(e.target.value)} placeholder="Name" className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Alias</label>
+                <input type="text" value={newPlayerAlias} onChange={e => setNewPlayerAlias(e.target.value)} placeholder="Alias (optional)" className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Rolle</label>
+                <select value={newPlayerRole} onChange={e => setNewPlayerRole(e.target.value as PlayerRole)} className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red">
+                  {playerRoles.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Gemschigrad</label>
+                <select value={newPlayerGrad} onChange={e => setNewPlayerGrad(e.target.value as Gemschigrad)} className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red">
+                  {gemschigrads.map(g => <option key={g} value={g}>{g}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Klassierung</label>
+                <select value={newPlayerKlass} onChange={e => setNewPlayerKlass(e.target.value as Klassierung)} className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red">
+                  {klassierungen.map(k => <option key={k} value={k}>{k}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Vorstellung</label>
+                <input type="text" value={newPlayerIntro} onChange={e => setNewPlayerIntro(e.target.value)} placeholder="Kurztext (optional)" className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
+              </div>
+              <div className="md:col-span-2">
+                <button onClick={handleAddPlayer} disabled={!newPlayerName.trim()} className="w-full px-4 py-2 bg-chnebel-red text-white rounded font-semibold hover:bg-[#c4161e] disabled:opacity-50">+ Spieler hinzufügen</button>
+              </div>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {players.map(player => (
+              <div key={player.id} className="flex items-center gap-3 p-4 bg-chnebel-gray rounded-lg border border-gray-200">
+                <div className="flex-1">
+                  <div className="font-medium text-chnebel-black">{player.name} {player.alias && <span className="text-gray-500 italic text-sm">"{player.alias}"</span>}</div>
+                  <div className="text-sm text-gray-500">{player.role} · {player.gemschigrad} · {player.klassierung}</div>
+                </div>
+                <button onClick={() => { if (window.confirm(`Spieler "${player.name}" entfernen?`)) removePlayer(player.id); }} className="px-3 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600">🗑️</button>
+              </div>
+            ))}
+          </div>
+        </CollapsibleSection>
+
+        {/* === SPIRIT === */}
+        <CollapsibleSection title="Spirit verwalten" icon="✨">
+          {selectedSeasonId ? (
+            <div className="space-y-3">
+              {players.map(player => {
+                const sv = spirit.find(s => s.playerId === player.id)?.value ?? 0;
+                return (
+                  <div key={player.id} className="flex items-center gap-4 p-3 bg-chnebel-gray rounded-lg">
+                    <span className="font-medium flex-1">{player.name}</span>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={sv}
+                      onChange={e => setPlayerSpirit(player.id, selectedSeasonId, parseInt(e.target.value))}
+                      className="w-32"
+                    />
+                    <span className="w-12 text-right font-semibold text-sm">{sv}%</span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-gray-500 text-center py-4">Bitte eine Saison auswählen</div>
+          )}
+        </CollapsibleSection>
+
+        {/* === TENUE === */}
+        <CollapsibleSection title="Tenue verwalten" icon="👕">
+          <div className="space-y-6">
+            {gemschigrads.map(grad => (
+              <div key={grad}>
+                <h3 className="font-semibold text-lg mb-3">{grad}</h3>
+                <div className="space-y-2 mb-3">
+                  {tenueData[grad].map(item => (
+                    <div key={item.id} className="flex items-center gap-3 p-3 bg-chnebel-gray rounded-lg">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-chnebel-red flex items-center justify-center text-white font-semibold text-sm">{item.order}</div>
+                      {editingTenue?.grad === grad && editingTenue?.id === item.id ? (
+                        <input
+                          type="text"
+                          defaultValue={item.text}
+                          onBlur={e => { updateTenueItem(grad, item.id, e.target.value); setEditingTenue(null); }}
+                          onKeyDown={e => { if (e.key === 'Enter') { updateTenueItem(grad, item.id, e.currentTarget.value); setEditingTenue(null); } if (e.key === 'Escape') setEditingTenue(null); }}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
+                          autoFocus
+                        />
                       ) : (
-                        <span className="flex-1">{item.text}</span>
+                        <span className="flex-1 cursor-pointer" onClick={() => setEditingTenue({ grad, id: item.id })}>{item.text}</span>
                       )}
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => setEditingTenue({ gemschigrad, id: item.id })}
-                          className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-sm"
-                        >
-                          ✏️ Bearbeiten
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (window.confirm('Möchten Sie dieses Tenue-Item wirklich löschen?')) {
-                              removeTenueItem(gemschigrad, item.id);
-                            }
-                          }}
-                          className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors text-sm"
-                        >
-                          🗑️ Löschen
-                        </button>
-                      </div>
+                      <button onClick={() => { if (window.confirm('Löschen?')) removeTenueItem(grad, item.id); }} className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600">🗑️</button>
                     </div>
                   ))}
                 </div>
                 <div className="flex gap-2">
                   <input
                     type="text"
-                    value={newTenueText[gemschigrad] || ''}
-                    onChange={(e) => setNewTenueText({ ...newTenueText, [gemschigrad]: e.target.value })}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        handleAddTenueItem(gemschigrad);
-                      }
-                    }}
-                    placeholder="Neues Tenue-Item hinzufügen..."
+                    value={newTenueText[grad] || ''}
+                    onChange={e => setNewTenueText({ ...newTenueText, [grad]: e.target.value })}
+                    onKeyDown={e => { if (e.key === 'Enter' && newTenueText[grad]?.trim()) { addTenueItem(grad, newTenueText[grad].trim()); setNewTenueText({ ...newTenueText, [grad]: '' }); } }}
+                    placeholder="Neues Item..."
                     className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
                   />
                   <button
-                    onClick={() => handleAddTenueItem(gemschigrad)}
-                    className="px-4 py-2 bg-chnebel-red text-white rounded hover:bg-[#c4161e] transition-colors font-semibold"
-                  >
-                    + Hinzufügen
-                  </button>
-                </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Events Management */}
-        <section className="bg-white rounded-lg p-6 shadow-sm">
-          <button
-            onClick={() => toggleSection('events')}
-            className="w-full flex items-center justify-between text-left mb-6"
-          >
-            <h2 className="text-2xl font-semibold text-chnebel-black flex items-center gap-2">
-              <span className="text-2xl">📅</span>
-              Events verwalten
-            </h2>
-            <svg
-              className={`w-6 h-6 text-chnebel-black transition-transform duration-200 ${isEventsExpanded ? 'rotate-180' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          <div
-            className={`overflow-hidden transition-all duration-300 ease-in-out ${
-              isEventsExpanded ? 'max-h-[5000px] opacity-100' : 'max-h-0 opacity-0'
-            }`}
-          >
-            {/* Add New Event Form */}
-            <div className="bg-chnebel-gray rounded-lg p-4 mb-6">
-              <h3 className="text-lg font-semibold text-chnebel-black mb-4">Neues Event hinzufügen</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Datum *</label>
-                  <input
-                    type="text"
-                    value={newEventDatum}
-                    onChange={(e) => setNewEventDatum(e.target.value)}
-                    placeholder="DD.MM.YYYY"
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Ort *</label>
-                  <input
-                    type="text"
-                    value={newEventOrt}
-                    onChange={(e) => setNewEventOrt(e.target.value)}
-                    placeholder="Ort"
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Gegner *</label>
-                  <input
-                    type="text"
-                    value={newEventGegner}
-                    onChange={(e) => setNewEventGegner(e.target.value)}
-                    placeholder="Gegner"
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <button
-                    onClick={handleAddEvent}
-                    disabled={!newEventDatum.trim() || !newEventOrt.trim() || !newEventGegner.trim()}
-                    className="w-full px-4 py-2 bg-chnebel-red text-white rounded hover:bg-[#c4161e] transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    + Event hinzufügen
-                  </button>
+                    onClick={() => { if (newTenueText[grad]?.trim()) { addTenueItem(grad, newTenueText[grad].trim()); setNewTenueText({ ...newTenueText, [grad]: '' }); } }}
+                    className="px-4 py-2 bg-chnebel-red text-white rounded font-semibold hover:bg-[#c4161e]"
+                  >+</button>
                 </div>
               </div>
-            </div>
-
-            {/* Events List */}
-            <div className="space-y-3">
-              {events.map((event) => (
-                <div
-                  key={event.id}
-                  className="flex items-center gap-3 p-4 bg-chnebel-gray rounded-lg border border-gray-200"
-                >
-                  <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-3">
-                    {/* Datum */}
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Datum</label>
-                      {editingEvent === `${event.id}-datum` ? (
-                        <input
-                          type="text"
-                          defaultValue={event.datum}
-                          onBlur={(e) => handleUpdateEvent(event.id, 'datum', e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              handleUpdateEvent(event.id, 'datum', e.currentTarget.value);
-                            } else if (e.key === 'Escape') {
-                              setEditingEvent(null);
-                            }
-                          }}
-                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                          autoFocus
-                        />
-                      ) : (
-                        <div
-                          className="px-2 py-1 text-sm font-medium text-chnebel-black cursor-pointer hover:bg-white rounded"
-                          onClick={() => setEditingEvent(`${event.id}-datum`)}
-                        >
-                          {event.datum}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Ort */}
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Ort</label>
-                      {editingEvent === `${event.id}-ort` ? (
-                        <input
-                          type="text"
-                          defaultValue={event.ort}
-                          onBlur={(e) => handleUpdateEvent(event.id, 'ort', e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              handleUpdateEvent(event.id, 'ort', e.currentTarget.value);
-                            } else if (e.key === 'Escape') {
-                              setEditingEvent(null);
-                            }
-                          }}
-                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                          autoFocus
-                        />
-                      ) : (
-                        <div
-                          className="px-2 py-1 text-sm font-medium text-chnebel-black cursor-pointer hover:bg-white rounded"
-                          onClick={() => setEditingEvent(`${event.id}-ort`)}
-                        >
-                          {event.ort}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Gegner */}
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Gegner</label>
-                      {editingEvent === `${event.id}-gegner` ? (
-                        <input
-                          type="text"
-                          defaultValue={event.gegner}
-                          onBlur={(e) => handleUpdateEvent(event.id, 'gegner', e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              handleUpdateEvent(event.id, 'gegner', e.currentTarget.value);
-                            } else if (e.key === 'Escape') {
-                              setEditingEvent(null);
-                            }
-                          }}
-                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                          autoFocus
-                        />
-                      ) : (
-                        <div
-                          className="px-2 py-1 text-sm font-medium text-chnebel-black cursor-pointer hover:bg-white rounded"
-                          onClick={() => setEditingEvent(`${event.id}-gegner`)}
-                        >
-                          {event.gegner}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Status */}
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
-                      <button
-                        onClick={() => handleOpenResultsModal(event)}
-                        className={`px-3 py-1 rounded text-xs font-semibold ${getStatusColor(event.status)} hover:opacity-80 transition-opacity`}
-                      >
-                        {event.status}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        if (window.confirm(`Möchten Sie das Event "${event.gegner}" wirklich löschen?`)) {
-                          removeEvent(event.id);
-                        }
-                      }}
-                      className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors text-sm"
-                    >
-                      🗑️
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+            ))}
           </div>
-        </section>
-
-        {/* Spieler Management */}
-        <section className="bg-white rounded-lg p-6 shadow-sm">
-          <button
-            onClick={() => toggleSection('spieler')}
-            className="w-full flex items-center justify-between text-left mb-6"
-          >
-            <h2 className="text-2xl font-semibold text-chnebel-black flex items-center gap-2">
-              <span className="text-2xl">👥</span>
-              Spieler verwalten
-            </h2>
-            <svg
-              className={`w-6 h-6 text-chnebel-black transition-transform duration-200 ${isSpielerExpanded ? 'rotate-180' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          <div
-            className={`overflow-hidden transition-all duration-300 ease-in-out ${
-              isSpielerExpanded ? 'max-h-[5000px] opacity-100' : 'max-h-0 opacity-0'
-            }`}
-          >
-            {/* Add New Player Form */}
-            <div className="bg-chnebel-gray rounded-lg p-4 mb-6">
-              <h3 className="text-lg font-semibold text-chnebel-black mb-4">Neuen Spieler hinzufügen</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
-                  <input
-                    type="text"
-                    value={newPlayerName}
-                    onChange={(e) => setNewPlayerName(e.target.value)}
-                    placeholder="Spielername"
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Alias</label>
-                  <input
-                    type="text"
-                    value={newPlayerAlias}
-                    onChange={(e) => setNewPlayerAlias(e.target.value)}
-                    placeholder="Alias (optional)"
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Rolle</label>
-                  <select
-                    value={newPlayerRole}
-                    onChange={(e) => setNewPlayerRole(e.target.value as PlayerRole)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                  >
-                    {playerRoles.map((role) => (
-                      <option key={role} value={role}>
-                        {getRoleEmoji(role)} {role}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Gemschigrad</label>
-                  <select
-                    value={newPlayerGemschigrad}
-                    onChange={(e) => setNewPlayerGemschigrad(e.target.value as Gemschigrad)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                  >
-                    {gemschigrads.map((grad) => (
-                      <option key={grad} value={grad}>{grad}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Klassierung</label>
-                  <select
-                    value={newPlayerKlassierung}
-                    onChange={(e) => setNewPlayerKlassierung(e.target.value as Klassierung)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                  >
-                    {klassierungen.map((klass) => (
-                      <option key={klass} value={klass}>{klass}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Invitation Code (für später)</label>
-                  <input
-                    type="text"
-                    value={newPlayerInvitationCode}
-                    onChange={(e) => setNewPlayerInvitationCode(e.target.value)}
-                    placeholder="Invitation Code"
-                    disabled
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red bg-gray-100 text-gray-500"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <button
-                    onClick={handleAddPlayer}
-                    disabled={!newPlayerName.trim()}
-                    className="w-full px-4 py-2 bg-chnebel-red text-white rounded hover:bg-[#c4161e] transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    + Spieler hinzufügen
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Players List */}
-            <div className="space-y-3">
-              {players.map((player) => (
-                <div
-                  key={player.id}
-                  className="flex items-center gap-3 p-4 bg-chnebel-gray rounded-lg border border-gray-200"
-                >
-                  <div className="flex-1 grid grid-cols-1 md:grid-cols-5 gap-3">
-                    {/* Name */}
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Name</label>
-                      {editingPlayer === `${player.id}-name` ? (
-                        <input
-                          type="text"
-                          defaultValue={player.name}
-                          onBlur={(e) => handleUpdatePlayer(player.id, 'name', e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              handleUpdatePlayer(player.id, 'name', e.currentTarget.value);
-                            } else if (e.key === 'Escape') {
-                              setEditingPlayer(null);
-                            }
-                          }}
-                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                          autoFocus
-                        />
-                      ) : (
-                        <div
-                          className="px-2 py-1 text-sm font-medium text-chnebel-black cursor-pointer hover:bg-white rounded"
-                          onClick={() => setEditingPlayer(`${player.id}-name`)}
-                        >
-                          {player.name} {getRoleEmoji(player.role) && <span className="text-yellow-500">{getRoleEmoji(player.role)}</span>}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Alias */}
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Alias</label>
-                      {editingPlayer === `${player.id}-alias` ? (
-                        <input
-                          type="text"
-                          defaultValue={player.alias || ''}
-                          onBlur={(e) => handleUpdatePlayer(player.id, 'alias', e.target.value || undefined)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              handleUpdatePlayer(player.id, 'alias', e.currentTarget.value || undefined);
-                            } else if (e.key === 'Escape') {
-                              setEditingPlayer(null);
-                            }
-                          }}
-                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                          autoFocus
-                        />
-                      ) : (
-                        <div
-                          className="px-2 py-1 text-sm font-medium text-chnebel-black cursor-pointer hover:bg-white rounded"
-                          onClick={() => setEditingPlayer(`${player.id}-alias`)}
-                        >
-                          {player.alias || '-'}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Rolle */}
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Rolle</label>
-                      {editingPlayer === `${player.id}-role` ? (
-                        <select
-                          defaultValue={player.role}
-                          onChange={(e) => handleUpdatePlayer(player.id, 'role', e.target.value as PlayerRole)}
-                          onBlur={() => setEditingPlayer(null)}
-                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                          autoFocus
-                        >
-                          {playerRoles.map((role) => (
-                            <option key={role} value={role}>
-                              {getRoleEmoji(role)} {role}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <div
-                          className="px-2 py-1 text-sm font-semibold text-chnebel-black cursor-pointer hover:bg-white rounded"
-                          onClick={() => setEditingPlayer(`${player.id}-role`)}
-                        >
-                          {getRoleEmoji(player.role) ? `${getRoleEmoji(player.role)} ${player.role}` : player.role}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Gemschigrad */}
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Gemschigrad</label>
-                      {editingPlayer === `${player.id}-gemschigrad` ? (
-                        <select
-                          defaultValue={player.gemschigrad}
-                          onChange={(e) => handleUpdatePlayer(player.id, 'gemschigrad', e.target.value as Gemschigrad)}
-                          onBlur={() => setEditingPlayer(null)}
-                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                          autoFocus
-                        >
-                          {gemschigrads.map((grad) => (
-                            <option key={grad} value={grad}>{grad}</option>
-                          ))}
-                        </select>
-                      ) : (
-                        <div
-                          className="px-2 py-1 text-sm cursor-pointer hover:bg-white rounded"
-                          onClick={() => setEditingPlayer(`${player.id}-gemschigrad`)}
-                        >
-                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getGemschigradColor(player.gemschigrad)}`}>
-                            {player.gemschigrad}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Klassierung */}
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Klassierung</label>
-                      {editingPlayer === `${player.id}-klassierung` ? (
-                        <select
-                          defaultValue={player.klassierung}
-                          onChange={(e) => handleUpdatePlayer(player.id, 'klassierung', e.target.value as Klassierung)}
-                          onBlur={() => setEditingPlayer(null)}
-                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                          autoFocus
-                        >
-                          {klassierungen.map((klass) => (
-                            <option key={klass} value={klass}>{klass}</option>
-                          ))}
-                        </select>
-                      ) : (
-                        <div
-                          className="px-2 py-1 text-sm font-semibold text-chnebel-black cursor-pointer hover:bg-white rounded"
-                          onClick={() => setEditingPlayer(`${player.id}-klassierung`)}
-                        >
-                          {player.klassierung}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        if (window.confirm(`Möchten Sie den Spieler "${player.name}" wirklich löschen?`)) {
-                          removePlayer(player.id);
-                        }
-                      }}
-                      className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors text-sm"
-                    >
-                      🗑️
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        </CollapsibleSection>
       </div>
 
-      {/* Results Entry Modal */}
-      {resultsModalEvent && (
-        <div
-          className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4"
-          onClick={handleCloseResultsModal}
-        >
-          <div
-            className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
+      {/* === ATTENDANCE MODAL === */}
+      {attendanceEventId && (
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4" onClick={() => setAttendanceEventId(null)}>
+          <div className="bg-white rounded-lg shadow-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="bg-gradient-to-r from-chnebel-red to-[#c4161e] text-white p-4 rounded-t-lg flex items-center justify-between">
+              <h2 className="text-xl font-bold">Anwesenheit bearbeiten</h2>
+              <button onClick={() => setAttendanceEventId(null)} className="text-white hover:bg-white/20 rounded-full p-1">✕</button>
+            </div>
+            <div className="p-4 space-y-2">
+              {players.map(p => (
+                <label key={p.id} className={`flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer ${attendanceSelection.includes(p.id) ? 'border-chnebel-red bg-red-50' : 'border-gray-200'}`}>
+                  <input type="checkbox" checked={attendanceSelection.includes(p.id)} onChange={e => { if (e.target.checked) setAttendanceSelection([...attendanceSelection, p.id]); else setAttendanceSelection(attendanceSelection.filter(id => id !== p.id)); }} className="w-5 h-5" />
+                  <span className="font-medium">{p.name}</span>
+                </label>
+              ))}
+            </div>
+            <div className="p-4 border-t flex justify-end">
+              <button onClick={saveAttendance} className="px-6 py-2 bg-chnebel-red text-white rounded font-semibold hover:bg-[#c4161e]">Speichern</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* === RESULTS MODAL (Interclub) === */}
+      {resultsEvent && resultsEvent.interclub && (
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4" onClick={() => setResultsEvent(null)}>
+          <div className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="bg-gradient-to-r from-chnebel-red to-[#c4161e] text-white p-6 rounded-t-lg sticky top-0 z-10">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold mb-2">Ergebnisse eingeben</h2>
-                  <div className="flex items-center gap-4 text-white/90">
-                    <span>📅 {resultsModalEvent.datum}</span>
-                    <span>📍 {resultsModalEvent.ort}</span>
-                    <span>vs. {resultsModalEvent.gegner}</span>
+                  <h2 className="text-2xl font-bold">Ergebnisse: {resultsEvent.interclub!.opponent}</h2>
+                  <div className="text-white/80 text-sm mt-1">
+                    {new Date(resultsEvent.startDateTime).toLocaleDateString('de-CH')} · {resultsEvent.location}
                   </div>
                 </div>
-                <button
-                  onClick={handleCloseResultsModal}
-                  className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
-                  aria-label="Close"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+                <button onClick={() => setResultsEvent(null)} className="text-white hover:bg-white/20 rounded-full p-2">✕</button>
               </div>
-              {/* Step Indicator */}
-              <div className="flex items-center gap-2 mt-4">
-                <div className={`flex-1 h-2 rounded ${resultsStep >= 1 ? 'bg-white' : 'bg-white/30'}`} />
-                <div className={`flex-1 h-2 rounded ${resultsStep >= 2 ? 'bg-white' : 'bg-white/30'}`} />
-                <div className={`flex-1 h-2 rounded ${resultsStep >= 3 ? 'bg-white' : 'bg-white/30'}`} />
+              <div className="flex gap-2 mt-4">
+                {[1, 2, 3].map(s => (
+                  <div key={s} className={`flex-1 h-2 rounded ${resultsStep >= s ? 'bg-white' : 'bg-white/30'}`} />
+                ))}
               </div>
             </div>
 
-            {/* Modal Content */}
             <div className="p-6">
-              {/* Step 1: Select Attendees */}
+              {/* Step 1: Info */}
               {resultsStep === 1 && (
                 <div>
-                  <h3 className="text-xl font-semibold text-chnebel-black mb-4">Spieler auswählen</h3>
-                  <p className="text-gray-600 mb-4">Wählen Sie die Spieler aus, die an diesem Event teilgenommen haben:</p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {players.map((player) => (
-                      <label
-                        key={player.id}
-                        className={`flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors ${
-                          selectedAttendees.includes(player.id)
-                            ? 'border-chnebel-red bg-red-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedAttendees.includes(player.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedAttendees([...selectedAttendees, player.id]);
-                            } else {
-                              setSelectedAttendees(selectedAttendees.filter(id => id !== player.id));
-                            }
-                          }}
-                          className="w-5 h-5 text-chnebel-red border-gray-300 rounded focus:ring-chnebel-red"
-                        />
-                        <div className="flex-1">
-                          <div className="font-medium text-chnebel-black">{player.name}</div>
-                          {player.alias && <div className="text-sm text-gray-500 italic">{player.alias}</div>}
-                        </div>
-                      </label>
-                    ))}
-                  </div>
+                  <h3 className="text-xl font-semibold mb-4">Schritt 1: Übersicht</h3>
+                  <p className="text-gray-600 mb-4">Im nächsten Schritt können Sie die Einzelspiele (1-6) eingeben, danach die Doppelspiele (7-9).</p>
+                  <p className="text-gray-600">Nur Spieler, die als anwesend markiert sind, können zugewiesen werden. Bitte stellen Sie sicher, dass die Anwesenheit korrekt erfasst ist.</p>
                 </div>
               )}
 
-              {/* Step 2: Singles Games (1-6) */}
+              {/* Step 2: Singles */}
               {resultsStep === 2 && (
                 <div>
-                  <h3 className="text-xl font-semibold text-chnebel-black mb-4">Einzelspiele (Spiel 1-6)</h3>
-                  <div className="space-y-6">
-                    {singlesGamesData.map((game: SinglesGame, index: number) => (
-                      <div key={game.gameNumber} className="border border-gray-200 rounded-lg p-4">
-                        <h4 className="font-semibold text-chnebel-black mb-3">Spiel {game.gameNumber}</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Spieler</label>
-                            <select
-                              value={game.playerId || ''}
-                              onChange={(e) => {
-                                const updated = [...singlesGamesData];
-                                updated[index].playerId = e.target.value || null;
-                                setSinglesGamesData(updated);
-                              }}
-                              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                            >
-                              <option value="">-- Spieler wählen --</option>
-                              {selectedAttendees.map(playerId => {
-                                const player = players.find(p => p.id === playerId);
-                                return player ? (
-                                  <option key={playerId} value={playerId}>{player.name}</option>
-                                ) : null;
-                              })}
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Gegner</label>
-                            <input
-                              type="text"
-                              value={resultsModalEvent.gegner}
-                              disabled
-                              className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-100 text-gray-600"
-                            />
-                          </div>
-                          {/* Set 1 */}
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Satz 1</label>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="number"
-                                min="0"
-                                max="7"
-                                value={game.set1?.ourScore || ''}
-                                onChange={(e) => {
-                                  const updated = [...singlesGamesData];
-                                  updated[index].set1 = {
-                                    ourScore: parseInt(e.target.value) || 0,
-                                    opponentScore: updated[index].set1?.opponentScore || 0,
-                                  };
-                                  setSinglesGamesData(updated);
-                                }}
-                                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                                placeholder="0"
-                              />
-                              <span className="text-gray-500">:</span>
-                              <input
-                                type="number"
-                                min="0"
-                                max="7"
-                                value={game.set1?.opponentScore || ''}
-                                onChange={(e) => {
-                                  const updated = [...singlesGamesData];
-                                  updated[index].set1 = {
-                                    ourScore: updated[index].set1?.ourScore || 0,
-                                    opponentScore: parseInt(e.target.value) || 0,
-                                  };
-                                  setSinglesGamesData(updated);
-                                }}
-                                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                                placeholder="0"
-                              />
+                  <h3 className="text-xl font-semibold mb-4">Einzelspiele (1-6)</h3>
+                  <div className="space-y-4">
+                    {resultsSingles.map((game, idx) => {
+                      const attendees = getEventAttendees(resultsEvent.id);
+                      return (
+                        <div key={game.gameNumber} className="border border-gray-200 rounded-lg p-4">
+                          <h4 className="font-semibold mb-3">Spiel {game.gameNumber}</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Spieler</label>
+                              <select value={game.playerId || ''} onChange={e => { const u = [...resultsSingles]; u[idx] = { ...u[idx], playerId: e.target.value || null }; setResultsSingles(u); }} className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red">
+                                <option value="">-- Spieler --</option>
+                                {attendees.map(a => { const p = players.find(pl => pl.id === a.playerId); return p ? <option key={a.playerId} value={a.playerId}>{p.name}</option> : null; })}
+                              </select>
                             </div>
-                          </div>
-                          {/* Set 2 */}
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Satz 2</label>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="number"
-                                min="0"
-                                max="7"
-                                value={game.set2?.ourScore || ''}
-                                onChange={(e) => {
-                                  const updated = [...singlesGamesData];
-                                  updated[index].set2 = {
-                                    ourScore: parseInt(e.target.value) || 0,
-                                    opponentScore: updated[index].set2?.opponentScore || 0,
-                                  };
-                                  setSinglesGamesData(updated);
-                                }}
-                                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                                placeholder="0"
-                              />
-                              <span className="text-gray-500">:</span>
-                              <input
-                                type="number"
-                                min="0"
-                                max="7"
-                                value={game.set2?.opponentScore || ''}
-                                onChange={(e) => {
-                                  const updated = [...singlesGamesData];
-                                  updated[index].set2 = {
-                                    ourScore: updated[index].set2?.ourScore || 0,
-                                    opponentScore: parseInt(e.target.value) || 0,
-                                  };
-                                  setSinglesGamesData(updated);
-                                }}
-                                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                                placeholder="0"
-                              />
-                            </div>
-                          </div>
-                          {/* Set 3 (only if needed) */}
-                          {((game.set1 && game.set1.ourScore !== game.set1.opponentScore) || 
-                            (game.set2 && game.set2.ourScore !== game.set2.opponentScore)) && (
-                            <div className="md:col-span-2">
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Satz 3 (falls nötig)</label>
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="7"
-                                  value={game.set3?.ourScore || ''}
-                                  onChange={(e) => {
-                                    const updated = [...singlesGamesData];
-                                    updated[index].set3 = {
-                                      ourScore: parseInt(e.target.value) || 0,
-                                      opponentScore: updated[index].set3?.opponentScore || 0,
-                                    };
-                                    setSinglesGamesData(updated);
-                                  }}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                                  placeholder="0"
-                                />
-                                <span className="text-gray-500">:</span>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="7"
-                                  value={game.set3?.opponentScore || ''}
-                                  onChange={(e) => {
-                                    const updated = [...singlesGamesData];
-                                    updated[index].set3 = {
-                                      ourScore: updated[index].set3?.ourScore || 0,
-                                      opponentScore: parseInt(e.target.value) || 0,
-                                    };
-                                    setSinglesGamesData(updated);
-                                  }}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                                  placeholder="0"
-                                />
+                            {[1, 2, 3].map(setNum => (
+                              <div key={setNum}>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Satz {setNum}</label>
+                                <div className="flex items-center gap-2">
+                                  <input type="number" min="0" max="30" value={(game as any)[`set${setNum}`]?.ourScore ?? ''} onChange={e => { const u = [...resultsSingles]; const key = `set${setNum}` as 'set1'|'set2'|'set3'; u[idx] = { ...u[idx], [key]: { ourScore: parseInt(e.target.value) || 0, opponentScore: u[idx][key]?.opponentScore || 0 } }; setResultsSingles(u); }} className="w-full px-2 py-1 border border-gray-300 rounded text-sm" placeholder="0" />
+                                  <span className="text-gray-400">:</span>
+                                  <input type="number" min="0" max="30" value={(game as any)[`set${setNum}`]?.opponentScore ?? ''} onChange={e => { const u = [...resultsSingles]; const key = `set${setNum}` as 'set1'|'set2'|'set3'; u[idx] = { ...u[idx], [key]: { ourScore: u[idx][key]?.ourScore || 0, opponentScore: parseInt(e.target.value) || 0 } }; setResultsSingles(u); }} className="w-full px-2 py-1 border border-gray-300 rounded text-sm" placeholder="0" />
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
-              {/* Step 3: Doubles Games (7-9) */}
+              {/* Step 3: Doubles */}
               {resultsStep === 3 && (
                 <div>
-                  <h3 className="text-xl font-semibold text-chnebel-black mb-4">Doppelspiele (Spiel 7-9)</h3>
-                  <div className="space-y-6">
-                    {doublesGamesData.map((game: DoublesGame, index: number) => (
-                      <div key={game.gameNumber} className="border border-gray-200 rounded-lg p-4">
-                        <h4 className="font-semibold text-chnebel-black mb-3">Spiel {game.gameNumber}</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Spieler 1</label>
-                            <select
-                              value={game.player1Id || ''}
-                              onChange={(e) => {
-                                const updated = [...doublesGamesData];
-                                updated[index].player1Id = e.target.value || null;
-                                setDoublesGamesData(updated);
-                              }}
-                              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                            >
-                              <option value="">-- Spieler wählen --</option>
-                              {selectedAttendees.map(playerId => {
-                                const player = players.find(p => p.id === playerId);
-                                return player ? (
-                                  <option key={playerId} value={playerId}>{player.name}</option>
-                                ) : null;
-                              })}
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Spieler 2</label>
-                            <select
-                              value={game.player2Id || ''}
-                              onChange={(e) => {
-                                const updated = [...doublesGamesData];
-                                updated[index].player2Id = e.target.value || null;
-                                setDoublesGamesData(updated);
-                              }}
-                              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                            >
-                              <option value="">-- Spieler wählen --</option>
-                              {selectedAttendees.map(playerId => {
-                                const player = players.find(p => p.id === playerId);
-                                return player ? (
-                                  <option key={playerId} value={playerId}>{player.name}</option>
-                                ) : null;
-                              })}
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Gegner</label>
-                            <input
-                              type="text"
-                              value={resultsModalEvent.gegner}
-                              disabled
-                              className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-100 text-gray-600"
-                            />
-                          </div>
-                          {/* Set 1 */}
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Satz 1</label>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="number"
-                                min="0"
-                                max="7"
-                                value={game.set1?.ourScore || ''}
-                                onChange={(e) => {
-                                  const updated = [...doublesGamesData];
-                                  updated[index].set1 = {
-                                    ourScore: parseInt(e.target.value) || 0,
-                                    opponentScore: updated[index].set1?.opponentScore || 0,
-                                  };
-                                  setDoublesGamesData(updated);
-                                }}
-                                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                                placeholder="0"
-                              />
-                              <span className="text-gray-500">:</span>
-                              <input
-                                type="number"
-                                min="0"
-                                max="7"
-                                value={game.set1?.opponentScore || ''}
-                                onChange={(e) => {
-                                  const updated = [...doublesGamesData];
-                                  updated[index].set1 = {
-                                    ourScore: updated[index].set1?.ourScore || 0,
-                                    opponentScore: parseInt(e.target.value) || 0,
-                                  };
-                                  setDoublesGamesData(updated);
-                                }}
-                                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                                placeholder="0"
-                              />
+                  <h3 className="text-xl font-semibold mb-4">Doppelspiele (7-9)</h3>
+                  <div className="space-y-4">
+                    {resultsDoubles.map((game, idx) => {
+                      const attendees = getEventAttendees(resultsEvent.id);
+                      return (
+                        <div key={game.gameNumber} className="border border-gray-200 rounded-lg p-4">
+                          <h4 className="font-semibold mb-3">Spiel {game.gameNumber}</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Spieler 1</label>
+                              <select value={game.player1Id || ''} onChange={e => { const u = [...resultsDoubles]; u[idx] = { ...u[idx], player1Id: e.target.value || null }; setResultsDoubles(u); }} className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red">
+                                <option value="">-- Spieler --</option>
+                                {attendees.map(a => { const p = players.find(pl => pl.id === a.playerId); return p ? <option key={a.playerId} value={a.playerId}>{p.name}</option> : null; })}
+                              </select>
                             </div>
-                          </div>
-                          {/* Set 2 */}
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Satz 2</label>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="number"
-                                min="0"
-                                max="7"
-                                value={game.set2?.ourScore || ''}
-                                onChange={(e) => {
-                                  const updated = [...doublesGamesData];
-                                  updated[index].set2 = {
-                                    ourScore: parseInt(e.target.value) || 0,
-                                    opponentScore: updated[index].set2?.opponentScore || 0,
-                                  };
-                                  setDoublesGamesData(updated);
-                                }}
-                                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                                placeholder="0"
-                              />
-                              <span className="text-gray-500">:</span>
-                              <input
-                                type="number"
-                                min="0"
-                                max="7"
-                                value={game.set2?.opponentScore || ''}
-                                onChange={(e) => {
-                                  const updated = [...doublesGamesData];
-                                  updated[index].set2 = {
-                                    ourScore: updated[index].set2?.ourScore || 0,
-                                    opponentScore: parseInt(e.target.value) || 0,
-                                  };
-                                  setDoublesGamesData(updated);
-                                }}
-                                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                                placeholder="0"
-                              />
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Spieler 2</label>
+                              <select value={game.player2Id || ''} onChange={e => { const u = [...resultsDoubles]; u[idx] = { ...u[idx], player2Id: e.target.value || null }; setResultsDoubles(u); }} className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red">
+                                <option value="">-- Spieler --</option>
+                                {attendees.map(a => { const p = players.find(pl => pl.id === a.playerId); return p ? <option key={a.playerId} value={a.playerId}>{p.name}</option> : null; })}
+                              </select>
                             </div>
-                          </div>
-                          {/* Set 3 (only if needed) */}
-                          {((game.set1 && game.set1.ourScore !== game.set1.opponentScore) || 
-                            (game.set2 && game.set2.ourScore !== game.set2.opponentScore)) && (
-                            <div className="md:col-span-2">
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Satz 3 (falls nötig)</label>
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="7"
-                                  value={game.set3?.ourScore || ''}
-                                  onChange={(e) => {
-                                    const updated = [...doublesGamesData];
-                                    updated[index].set3 = {
-                                      ourScore: parseInt(e.target.value) || 0,
-                                      opponentScore: updated[index].set3?.opponentScore || 0,
-                                    };
-                                    setDoublesGamesData(updated);
-                                  }}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                                  placeholder="0"
-                                />
-                                <span className="text-gray-500">:</span>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="7"
-                                  value={game.set3?.opponentScore || ''}
-                                  onChange={(e) => {
-                                    const updated = [...doublesGamesData];
-                                    updated[index].set3 = {
-                                      ourScore: updated[index].set3?.ourScore || 0,
-                                      opponentScore: parseInt(e.target.value) || 0,
-                                    };
-                                    setDoublesGamesData(updated);
-                                  }}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                                  placeholder="0"
-                                />
+                            {[1, 2, 3].map(setNum => (
+                              <div key={setNum}>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Satz {setNum}</label>
+                                <div className="flex items-center gap-2">
+                                  <input type="number" min="0" max="30" value={(game as any)[`set${setNum}`]?.ourScore ?? ''} onChange={e => { const u = [...resultsDoubles]; const key = `set${setNum}` as 'set1'|'set2'|'set3'; u[idx] = { ...u[idx], [key]: { ourScore: parseInt(e.target.value) || 0, opponentScore: u[idx][key]?.opponentScore || 0 } }; setResultsDoubles(u); }} className="w-full px-2 py-1 border border-gray-300 rounded text-sm" placeholder="0" />
+                                  <span className="text-gray-400">:</span>
+                                  <input type="number" min="0" max="30" value={(game as any)[`set${setNum}`]?.opponentScore ?? ''} onChange={e => { const u = [...resultsDoubles]; const key = `set${setNum}` as 'set1'|'set2'|'set3'; u[idx] = { ...u[idx], [key]: { ourScore: u[idx][key]?.ourScore || 0, opponentScore: parseInt(e.target.value) || 0 } }; setResultsDoubles(u); }} className="w-full px-2 py-1 border border-gray-300 rounded text-sm" placeholder="0" />
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
+            </div>
 
-              {/* Modal Footer */}
-              <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200">
-                <button
-                  onClick={resultsStep > 1 ? () => setResultsStep((resultsStep - 1) as 1 | 2 | 3) : handleCloseResultsModal}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
-                >
-                  {resultsStep > 1 ? 'Zurück' : 'Abbrechen'}
-                </button>
-                <div className="flex gap-2">
-                  {resultsStep < 3 ? (
-                    <button
-                      onClick={handleNextStep}
-                      className="px-6 py-2 bg-chnebel-red text-white rounded hover:bg-[#c4161e] transition-colors font-semibold"
-                    >
-                      Weiter
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handleSaveResults}
-                      className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors font-semibold"
-                    >
-                      Speichern
-                    </button>
-                  )}
-                </div>
-              </div>
+            {/* Footer */}
+            <div className="flex items-center justify-between p-6 border-t sticky bottom-0 bg-white">
+              <button onClick={resultsStep > 1 ? () => setResultsStep((resultsStep - 1) as 1 | 2 | 3) : () => setResultsEvent(null)} className="px-4 py-2 text-gray-700 bg-gray-100 rounded hover:bg-gray-200">
+                {resultsStep > 1 ? 'Zurück' : 'Abbrechen'}
+              </button>
+              {resultsStep < 3 ? (
+                <button onClick={() => setResultsStep((resultsStep + 1) as 2 | 3)} className="px-6 py-2 bg-chnebel-red text-white rounded font-semibold hover:bg-[#c4161e]">Weiter</button>
+              ) : (
+                <button onClick={saveResults} className="px-6 py-2 bg-green-600 text-white rounded font-semibold hover:bg-green-700">Speichern</button>
+              )}
             </div>
           </div>
         </div>

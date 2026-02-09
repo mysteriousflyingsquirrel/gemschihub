@@ -2,24 +2,21 @@ export type Gemschigrad = 'Ehrengemschi' | 'Kuttengemschi' | 'Bandanagemschi' | 
 export type Klassierung = 'N1' | 'N2' | 'N3' | 'N4' | 'R1' | 'R2' | 'R3' | 'R4' | 'R5' | 'R6' | 'R7' | 'R8' | 'R9';
 export type PlayerRole = 'Spieler' | 'Captain' | 'CEO of Patchio';
 
+/**
+ * Player entity — persistent across seasons.
+ * Seasonal data (stats, spirit) is stored separately.
+ */
 export interface Player {
   id: string;
   name: string;
   alias?: string;
+  role: PlayerRole;
   gemschigrad: Gemschigrad;
   klassierung: Klassierung;
+  profilePictureUrl: string | null; // URL or null (upload deferred to Firebase Storage)
+  introduction?: string; // Short free-text introduction
   email?: string;
   phone?: string;
   joinDate?: string;
-  matchesPlayed: number;
-  matchesWon: number;
-  matchesLost: number;
-  winRate: number;
-  role: PlayerRole;
-  interclubanwesenheit: number; // Percentage (0-100)
-  gewinnrateEinzel: number; // Percentage (0-100)
-  gewinnrateDoppel: number; // Percentage (0-100)
-  trainingsanwesenheit: number; // Percentage (0-100)
-  spirit: number; // Percentage (0-100)
+  isActive: boolean; // false = removed from active roster but historical data preserved
 }
-

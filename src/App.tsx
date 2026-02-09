@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
-import { ProtectedRoute } from './components/ProtectedRoute';
+import { AdminRoute } from './components/ProtectedRoute';
 import { Login } from './pages/Login';
 import { Info } from './pages/Info';
 import { Events } from './pages/Events';
@@ -13,95 +13,34 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Auth route */}
         <Route path="/login" element={<Login />} />
-        
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Navigate to="/info" replace />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        
-        <Route
-          path="/info"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Info />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        
-        <Route
-          path="/events"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Events />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        
-        <Route
-          path="/spieler"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Spieler />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        
-        <Route
-          path="/verfassung"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Verfassung />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        
-        <Route
-          path="/patchsystem"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Patchsystem />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        
+
+        {/* Public routes — no login required */}
+        <Route path="/" element={<Layout><Navigate to="/info" replace /></Layout>} />
+        <Route path="/info" element={<Layout><Info /></Layout>} />
+        <Route path="/events" element={<Layout><Events /></Layout>} />
+        <Route path="/spieler" element={<Layout><Spieler /></Layout>} />
+        <Route path="/verfassung" element={<Layout><Verfassung /></Layout>} />
+        <Route path="/patchsystem" element={<Layout><Patchsystem /></Layout>} />
+
+        {/* Admin route — requires Captain login */}
         <Route
           path="/admin"
           element={
-            <ProtectedRoute>
+            <AdminRoute>
               <Layout>
                 <Admin />
               </Layout>
-            </ProtectedRoute>
+            </AdminRoute>
           }
         />
-        
-        <Route
-          path="*"
-          element={
-            <Navigate to="/info" replace />
-          }
-        />
+
+        {/* Catch-all */}
+        <Route path="*" element={<Navigate to="/info" replace />} />
       </Routes>
     </BrowserRouter>
   );
 }
 
 export default App;
-

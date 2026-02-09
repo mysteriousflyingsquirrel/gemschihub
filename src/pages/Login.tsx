@@ -3,15 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 export const Login: React.FC = () => {
-  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [invitationCode, setInvitationCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const { login, signup } = useAuth();
+  const { login, user } = useAuth();
   const navigate = useNavigate();
+
+  // If already logged in as admin, redirect to admin
+  if (user?.isAdmin) {
+    navigate('/admin', { replace: true });
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,19 +22,11 @@ export const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      if (isSignUp) {
-        if (!invitationCode.trim()) {
-          setError('Invitation code is required');
-          setLoading(false);
-          return;
-        }
-        await signup(email, password, invitationCode);
-      } else {
-        await login(email, password);
-      }
-      navigate('/events');
-    } catch (err: any) {
-      setError(err.message || 'An error occurred');
+      await login(email, password);
+      navigate('/admin');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Anmeldung fehlgeschlagen';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -40,27 +35,8 @@ export const Login: React.FC = () => {
   return (
     <div className="min-h-screen bg-chnebel-gray flex items-center justify-center p-8">
       <div className="bg-white rounded-lg p-10 w-full max-w-md shadow-md">
-        <h1 className="text-chnebel-black text-3xl font-semibold text-center mb-8">GemschiHub</h1>
-        <div className="flex gap-2 mb-8 border-b-2 border-chnebel-gray">
-          <button
-            className={`flex-1 py-3 border-none bg-transparent text-gray-600 text-base cursor-pointer border-b-2 -mb-[2px] transition-all hover:text-chnebel-black ${
-              !isSignUp ? 'text-chnebel-red border-b-chnebel-red font-semibold' : 'border-transparent'
-            }`}
-            onClick={() => setIsSignUp(false)}
-            type="button"
-          >
-            Login
-          </button>
-          <button
-            className={`flex-1 py-3 border-none bg-transparent text-gray-600 text-base cursor-pointer border-b-2 -mb-[2px] transition-all hover:text-chnebel-black ${
-              isSignUp ? 'text-chnebel-red border-b-chnebel-red font-semibold' : 'border-transparent'
-            }`}
-            onClick={() => setIsSignUp(true)}
-            type="button"
-          >
-            Sign Up
-          </button>
-        </div>
+        <h1 className="text-chnebel-black text-3xl font-semibold text-center mb-2">GemschiHub</h1>
+        <p className="text-gray-500 text-center mb-8 text-sm">Captain Login</p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
           {error && (
@@ -83,7 +59,7 @@ export const Login: React.FC = () => {
           </div>
 
           <div className="flex flex-col gap-2">
-            <label htmlFor="password" className="text-chnebel-black text-sm font-medium">Password</label>
+            <label htmlFor="password" className="text-chnebel-black text-sm font-medium">Passwort</label>
             <input
               id="password"
               type="password"
@@ -96,32 +72,19 @@ export const Login: React.FC = () => {
             />
           </div>
 
-          {isSignUp && (
-            <div className="flex flex-col gap-2">
-              <label htmlFor="invitationCode" className="text-chnebel-black text-sm font-medium">Invitation Code</label>
-              <input
-                id="invitationCode"
-                type="text"
-                value={invitationCode}
-                onChange={(e) => setInvitationCode(e.target.value)}
-                required
-                disabled={loading}
-                placeholder="Enter your invitation code"
-                className="px-3 py-3 border border-gray-300 rounded text-base transition-colors focus:outline-none focus:border-chnebel-red disabled:bg-chnebel-gray disabled:cursor-not-allowed"
-              />
-            </div>
-          )}
-
           <button
             type="submit"
             className="bg-chnebel-red text-white border-none px-3 py-3 rounded text-base font-semibold cursor-pointer transition-colors hover:bg-[#c4161e] mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
             disabled={loading}
           >
-            {loading ? 'Loading...' : isSignUp ? 'Sign Up' : 'Login'}
+            {loading ? 'Laden...' : 'Anmelden'}
           </button>
         </form>
+
+        <p className="text-gray-400 text-xs text-center mt-6">
+          Nur für den Captain. Öffentliche Inhalte sind ohne Login zugänglich.
+        </p>
       </div>
     </div>
   );
 };
-

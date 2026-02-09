@@ -1,207 +1,75 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import {
+  AppEvent,
+  createEmptySinglesGames,
+  createEmptyDoublesGames,
+  calculateTotalScore,
+  deriveMatchStatus,
+} from '../types/event';
+import { storage } from '../storage/StorageService';
+import { useSeasons } from './SeasonsContext';
 
-export interface EventAttendee {
-  playerId: string;
-  singlesPlayed: 0 | 1;
-  singlesWon: 0 | 1;
-  doublesPlayed: 0 | 1;
-  doublesWon: 0 | 1;
-}
-
-export interface GameScore {
-  ourScore: number;
-  opponentScore: number;
-}
-
-export interface SinglesGame {
-  gameNumber: number; // 1-6
-  playerId: string | null;
-  set1: GameScore | null;
-  set2: GameScore | null;
-  set3: GameScore | null;
-}
-
-export interface DoublesGame {
-  gameNumber: number; // 7-9
-  player1Id: string | null;
-  player2Id: string | null;
-  set1: GameScore | null;
-  set2: GameScore | null;
-  set3: GameScore | null;
-}
-
-export type EventStatus = 'Offen' | 'Am Spielen' | 'Gespielt';
-
-export interface InterclubEvent {
-  id: string;
-  datum: string;
-  ort: string;
-  gegner: string;
-  score?: string; // Format: "3:2" or undefined if no score yet
-  status: EventStatus;
-  attendees: EventAttendee[];
-  singlesGames: SinglesGame[]; // Games 1-6
-  doublesGames: DoublesGame[]; // Games 7-9
-  totalScore: {
-    ourScore: number; // 0-9
-    opponentScore: number; // 0-9
-  };
-}
+const STORAGE_KEY = 'gemschihub_events';
 
 interface EventsContextType {
-  events: InterclubEvent[];
-  addEvent: (event: Omit<InterclubEvent, 'id'>) => void;
-  updateEvent: (id: string, updates: Partial<InterclubEvent>) => void;
+  /** All events across all seasons. */
+  allEvents: AppEvent[];
+  /** Events for the currently selected season only. */
+  events: AppEvent[];
+  addEvent: (event: Omit<AppEvent, 'id'>) => AppEvent;
+  updateEvent: (id: string, updates: Partial<AppEvent>) => void;
   removeEvent: (id: string) => void;
+  getEvent: (id: string) => AppEvent | undefined;
 }
 
 const EventsContext = createContext<EventsContextType | undefined>(undefined);
 
-const createEmptySinglesGames = (): SinglesGame[] => {
-  return Array.from({ length: 6 }, (_, i) => ({
-    gameNumber: i + 1,
-    playerId: null,
-    set1: null,
-    set2: null,
-    set3: null,
-  }));
-};
-
-const createEmptyDoublesGames = (): DoublesGame[] => {
-  return Array.from({ length: 3 }, (_, i) => ({
-    gameNumber: i + 7,
-    player1Id: null,
-    player2Id: null,
-    set1: null,
-    set2: null,
-    set3: null,
-  }));
-};
-
-const calculateGameWinner = (game: SinglesGame | DoublesGame): 'our' | 'opponent' | null => {
-  if (!game.set1) return null;
-  
-  let ourWins = 0;
-  let opponentWins = 0;
-  
-  if (game.set1) {
-    if (game.set1.ourScore > game.set1.opponentScore) ourWins++;
-    else if (game.set1.opponentScore > game.set1.ourScore) opponentWins++;
-  }
-  if (game.set2) {
-    if (game.set2.ourScore > game.set2.opponentScore) ourWins++;
-    else if (game.set2.opponentScore > game.set2.ourScore) opponentWins++;
-  }
-  if (game.set3) {
-    if (game.set3.ourScore > game.set3.opponentScore) ourWins++;
-    else if (game.set3.opponentScore > game.set3.ourScore) opponentWins++;
-  }
-  
-  if (ourWins >= 2) return 'our';
-  if (opponentWins >= 2) return 'opponent';
-  return null;
-};
-
-const calculateTotalScore = (singlesGames: SinglesGame[], doublesGames: DoublesGame[]): { ourScore: number; opponentScore: number } => {
-  let ourScore = 0;
-  let opponentScore = 0;
-  
-  [...singlesGames, ...doublesGames].forEach(game => {
-    const winner = calculateGameWinner(game);
-    if (winner === 'our') ourScore++;
-    else if (winner === 'opponent') opponentScore++;
-  });
-  
-  return { ourScore, opponentScore };
-};
-
-const calculateStatus = (singlesGames: SinglesGame[], doublesGames: DoublesGame[]): EventStatus => {
-  const allGames = [...singlesGames, ...doublesGames];
-  const gamesWithResults = allGames.filter(g => g.set1 !== null);
-  
-  if (gamesWithResults.length === 0) return 'Offen';
-  if (gamesWithResults.length < 9) return 'Am Spielen';
-  return 'Gespielt';
-};
-
-const defaultEvents: InterclubEvent[] = [
+const defaultEvents: AppEvent[] = [
   {
-    id: '1',
-    datum: '15.01.2024',
-    ort: 'Zürich',
-    gegner: 'GC Zürich',
-    score: '5:4',
-    status: 'Gespielt',
-    totalScore: { ourScore: 5, opponentScore: 4 },
-    attendees: [
-      { playerId: '1', singlesPlayed: 1, singlesWon: 1, doublesPlayed: 1, doublesWon: 1 },
-      { playerId: '2', singlesPlayed: 1, singlesWon: 1, doublesPlayed: 0, doublesWon: 0 },
-      { playerId: '3', singlesPlayed: 1, singlesWon: 0, doublesPlayed: 1, doublesWon: 1 },
-      { playerId: '5', singlesPlayed: 1, singlesWon: 1, doublesPlayed: 0, doublesWon: 0 },
-      { playerId: '6', singlesPlayed: 0, singlesWon: 0, doublesPlayed: 1, doublesWon: 0 },
-      { playerId: '9', singlesPlayed: 1, singlesWon: 1, doublesPlayed: 0, doublesWon: 0 },
-    ],
-    singlesGames: createEmptySinglesGames(),
-    doublesGames: createEmptyDoublesGames(),
+    id: 'evt-1',
+    seasonId: 'season-2024-2025',
+    type: 'Interclub',
+    title: 'Interclub vs. GC Zürich',
+    startDateTime: '2024-01-15T18:00:00.000Z',
+    location: 'Zürich',
+    interclub: {
+      opponent: 'GC Zürich',
+      matchStatus: 'Gespielt',
+      singlesGames: createEmptySinglesGames(),
+      doublesGames: createEmptyDoublesGames(),
+      totalScore: { ourScore: 5, opponentScore: 4 },
+    },
   },
   {
-    id: '2',
-    datum: '22.01.2024',
-    ort: 'Bern',
-    gegner: 'BC Bern',
-    score: '2:7',
-    status: 'Gespielt',
-    totalScore: { ourScore: 2, opponentScore: 7 },
-    attendees: [
-      { playerId: '2', singlesPlayed: 1, singlesWon: 0, doublesPlayed: 1, doublesWon: 0 },
-      { playerId: '3', singlesPlayed: 1, singlesWon: 0, doublesPlayed: 1, doublesWon: 0 },
-      { playerId: '4', singlesPlayed: 1, singlesWon: 1, doublesPlayed: 0, doublesWon: 0 },
-      { playerId: '7', singlesPlayed: 1, singlesWon: 1, doublesPlayed: 0, doublesWon: 0 },
-      { playerId: '10', singlesPlayed: 0, singlesWon: 0, doublesPlayed: 1, doublesWon: 0 },
-    ],
-    singlesGames: createEmptySinglesGames(),
-    doublesGames: createEmptyDoublesGames(),
+    id: 'evt-2',
+    seasonId: 'season-2024-2025',
+    type: 'Interclub',
+    title: 'Interclub vs. BC Bern',
+    startDateTime: '2024-01-22T18:00:00.000Z',
+    location: 'Bern',
+    interclub: {
+      opponent: 'BC Bern',
+      matchStatus: 'Gespielt',
+      singlesGames: createEmptySinglesGames(),
+      doublesGames: createEmptyDoublesGames(),
+      totalScore: { ourScore: 2, opponentScore: 7 },
+    },
   },
   {
-    id: '3',
-    datum: '05.02.2024',
-    ort: 'Basel',
-    gegner: 'TC Basel',
-    status: 'Offen',
-    totalScore: { ourScore: 0, opponentScore: 0 },
-    attendees: [],
-    singlesGames: createEmptySinglesGames(),
-    doublesGames: createEmptyDoublesGames(),
+    id: 'evt-3',
+    seasonId: 'season-2024-2025',
+    type: 'Training',
+    title: 'Training Montag',
+    startDateTime: '2024-01-08T18:00:00.000Z',
+    location: 'Halle A',
   },
   {
-    id: '4',
-    datum: '12.02.2024',
-    ort: 'Luzern',
-    gegner: 'SC Luzern',
-    score: '6:3',
-    status: 'Gespielt',
-    totalScore: { ourScore: 6, opponentScore: 3 },
-    attendees: [
-      { playerId: '1', singlesPlayed: 1, singlesWon: 1, doublesPlayed: 1, doublesWon: 1 },
-      { playerId: '2', singlesPlayed: 1, singlesWon: 1, doublesPlayed: 0, doublesWon: 0 },
-      { playerId: '5', singlesPlayed: 1, singlesWon: 1, doublesPlayed: 0, doublesWon: 0 },
-      { playerId: '6', singlesPlayed: 1, singlesWon: 1, doublesPlayed: 1, doublesWon: 1 },
-      { playerId: '9', singlesPlayed: 1, singlesWon: 1, doublesPlayed: 0, doublesWon: 0 },
-      { playerId: '10', singlesPlayed: 0, singlesWon: 0, doublesPlayed: 1, doublesWon: 1 },
-    ],
-    singlesGames: createEmptySinglesGames(),
-    doublesGames: createEmptyDoublesGames(),
-  },
-  {
-    id: '5',
-    datum: '19.02.2024',
-    ort: 'Genf',
-    gegner: 'GC Genève',
-    status: 'Offen',
-    totalScore: { ourScore: 0, opponentScore: 0 },
-    attendees: [],
-    singlesGames: createEmptySinglesGames(),
-    doublesGames: createEmptyDoublesGames(),
+    id: 'evt-4',
+    seasonId: 'season-2024-2025',
+    type: 'Spirit',
+    title: 'Bierversammlung',
+    startDateTime: '2024-01-20T19:00:00.000Z',
+    location: 'Vereinslokal',
   },
 ];
 
@@ -214,54 +82,73 @@ export const useEvents = () => {
 };
 
 export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [events, setEvents] = useState<InterclubEvent[]>(() => {
-    const stored = localStorage.getItem('interclubEvents');
-    return stored ? JSON.parse(stored) : defaultEvents;
+  const { selectedSeasonId } = useSeasons();
+
+  const [allEvents, setAllEvents] = useState<AppEvent[]>(() => {
+    return storage.get<AppEvent[]>(STORAGE_KEY) || defaultEvents;
   });
 
   useEffect(() => {
-    localStorage.setItem('interclubEvents', JSON.stringify(events));
-  }, [events]);
+    storage.set(STORAGE_KEY, allEvents);
+  }, [allEvents]);
 
-  const addEvent = (eventData: Omit<InterclubEvent, 'id'>) => {
-    const newEvent: InterclubEvent = {
+  // Filter to selected season
+  const events = useMemo(
+    () => (selectedSeasonId ? allEvents.filter(e => e.seasonId === selectedSeasonId) : []),
+    [allEvents, selectedSeasonId]
+  );
+
+  const addEvent = useCallback((eventData: Omit<AppEvent, 'id'>): AppEvent => {
+    const newEvent: AppEvent = {
       ...eventData,
-      id: Date.now().toString(),
-      singlesGames: eventData.singlesGames || createEmptySinglesGames(),
-      doublesGames: eventData.doublesGames || createEmptyDoublesGames(),
-      status: eventData.status || 'Offen',
+      id: `evt-${Date.now()}`,
     };
-    setEvents(prev => [...prev, newEvent]);
-  };
+    // Initialize interclub data if type is Interclub and not provided
+    if (newEvent.type === 'Interclub' && !newEvent.interclub) {
+      newEvent.interclub = {
+        opponent: '',
+        matchStatus: 'Offen',
+        singlesGames: createEmptySinglesGames(),
+        doublesGames: createEmptyDoublesGames(),
+        totalScore: { ourScore: 0, opponentScore: 0 },
+      };
+    }
+    setAllEvents(prev => [...prev, newEvent]);
+    return newEvent;
+  }, []);
 
-  const updateEvent = (id: string, updates: Partial<InterclubEvent>) => {
-    setEvents(prev =>
+  const updateEvent = useCallback((id: string, updates: Partial<AppEvent>) => {
+    setAllEvents(prev =>
       prev.map(event => {
-        if (event.id === id) {
-          const updated = { ...event, ...updates };
-          // Recalculate total score and status if games were updated
-          if (updates.singlesGames || updates.doublesGames) {
-            const singles = updates.singlesGames || event.singlesGames;
-            const doubles = updates.doublesGames || event.doublesGames;
-            updated.totalScore = calculateTotalScore(singles, doubles);
-            updated.status = calculateStatus(singles, doubles);
-            updated.score = `${updated.totalScore.ourScore}:${updated.totalScore.opponentScore}`;
-          }
-          return updated;
+        if (event.id !== id) return event;
+        const updated = { ...event, ...updates };
+        // Recalculate interclub totals if games were updated
+        if (updated.interclub && (updates.interclub?.singlesGames || updates.interclub?.doublesGames)) {
+          const singles = updated.interclub.singlesGames;
+          const doubles = updated.interclub.doublesGames;
+          updated.interclub = {
+            ...updated.interclub,
+            totalScore: calculateTotalScore(singles, doubles),
+            matchStatus: deriveMatchStatus(singles, doubles),
+          };
         }
-        return event;
+        return updated;
       })
     );
-  };
+  }, []);
 
-  const removeEvent = (id: string) => {
-    setEvents(prev => prev.filter(event => event.id !== id));
-  };
+  const removeEvent = useCallback((id: string) => {
+    setAllEvents(prev => prev.filter(e => e.id !== id));
+  }, []);
+
+  const getEvent = useCallback(
+    (id: string) => allEvents.find(e => e.id === id),
+    [allEvents]
+  );
 
   return (
-    <EventsContext.Provider value={{ events, addEvent, updateEvent, removeEvent }}>
+    <EventsContext.Provider value={{ allEvents, events, addEvent, updateEvent, removeEvent, getEvent }}>
       {children}
     </EventsContext.Provider>
   );
 };
-

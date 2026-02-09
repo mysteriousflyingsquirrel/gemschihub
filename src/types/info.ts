@@ -9,10 +9,3 @@ export interface TenueItem {
 export type TenueData = {
   [K in Gemschigrad]: TenueItem[];
 }
-
-export interface Pendenz {
-  id: string;
-  title: string;
-  done: boolean;
-}
-

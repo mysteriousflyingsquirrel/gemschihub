@@ -1,6 +1,7 @@
 import { initializeApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
+import { getMessaging, Messaging, isSupported } from 'firebase/messaging';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
@@ -19,6 +20,7 @@ if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
 let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
+let messaging: Messaging | null = null;
 
 try {
   app = initializeApp(firebaseConfig);
@@ -26,7 +28,6 @@ try {
   db = getFirestore(app);
 } catch (error) {
   console.error('Failed to initialize Firebase:', error);
-  // Initialize with minimal config to prevent crashes
   const fallbackConfig = {
     apiKey: 'demo-key',
     authDomain: 'demo.firebaseapp.com',
@@ -40,5 +41,21 @@ try {
   db = getFirestore(app);
 }
 
-export { app, auth, db };
+/** Get FCM messaging instance (only if supported by current browser). */
+export async function getMessagingInstance(): Promise<Messaging | null> {
+  if (messaging) return messaging;
+  try {
+    const supported = await isSupported();
+    if (!supported) {
+      console.warn('FCM is not supported in this browser.');
+      return null;
+    }
+    messaging = getMessaging(app);
+    return messaging;
+  } catch (error) {
+    console.error('Failed to initialize FCM:', error);
+    return null;
+  }
+}
 
+export { app, auth, db };
