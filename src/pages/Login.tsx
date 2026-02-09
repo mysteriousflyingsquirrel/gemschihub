@@ -40,7 +40,7 @@ export const Login: React.FC = () => {
   return (
     <div className="min-h-screen bg-chnebel-gray flex items-center justify-center p-8">
       <div className="bg-white rounded-lg p-10 w-full max-w-md shadow-md">
-        <h1 className="text-chnebel-black text-3xl font-semibold text-center mb-8">Chnebel Gemscheni</h1>
+        <h1 className="text-chnebel-black text-3xl font-semibold text-center mb-8">GemschiHub</h1>
         <div className="flex gap-2 mb-8 border-b-2 border-chnebel-gray">
           <button
             className={`flex-1 py-3 border-none bg-transparent text-gray-600 text-base cursor-pointer border-b-2 -mb-[2px] transition-all hover:text-chnebel-black ${

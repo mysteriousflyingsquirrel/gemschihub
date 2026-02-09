@@ -50,7 +50,7 @@ export const Topbar: React.FC<TopbarProps> = ({ isMenuOpen, onMenuToggle }) => {
           className="w-10 h-10 object-contain rounded-full bg-white/10 p-1"
         />
         <h1 className="text-white text-lg font-bold drop-shadow-lg">
-          Chnebel Gemscheni
+          GemschiHub
         </h1>
       </div>
     </div>

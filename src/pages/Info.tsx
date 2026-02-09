@@ -23,26 +23,26 @@ export const Info: React.FC = () => {
   return (
     <>
       <PageTitle>Info</PageTitle>
-      <div className="space-y-4 md:space-y-6">
-        <section className="bg-white rounded-lg p-4 md:p-6 shadow-sm">
-          <h2 className="text-xl md:text-2xl font-semibold text-chnebel-black mb-3 md:mb-4">Willkommen bei Chnebel Gemscheni</h2>
-          <p className="text-sm md:text-base text-chnebel-black leading-relaxed">
+      <div className="space-y-6">
+        <section className="bg-white rounded-lg p-6 shadow-sm">
+          <h2 className="text-2xl font-semibold text-chnebel-black mb-4">Willkommen bei Chnebel Gemscheni</h2>
+          <p className="text-chnebel-black leading-relaxed">
             Dies ist die interne Anwendung für Chnebel Gemscheni. Hier finden Sie alle wichtigen Informationen,
             Events, Spieler und weitere relevante Inhalte.
           </p>
         </section>
 
         {/* Tenue Section */}
-        <section className="bg-white rounded-lg p-4 md:p-6 shadow-sm">
-          <h2 className="text-xl md:text-2xl font-semibold text-chnebel-black mb-4 md:mb-6 flex items-center gap-2">
-            <span className="text-xl md:text-2xl">👕</span>
+        <section className="bg-white rounded-lg p-6 shadow-sm">
+          <h2 className="text-2xl font-semibold text-chnebel-black mb-6 flex items-center gap-2">
+            <span className="text-2xl">👕</span>
             Tenue
           </h2>
-          <div className="space-y-4 md:space-y-6 text-chnebel-black">
+          <div className="space-y-6 text-chnebel-black">
             {gemschigrads.map((gemschigrad, index) => (
-              <div key={gemschigrad} className={index > 0 ? 'border-t border-gray-200 pt-4 md:pt-6' : ''}>
-                <h3 className="font-semibold text-base md:text-lg mb-3 md:mb-4 flex items-center gap-2">
-                  <span className={`px-2 md:px-3 py-1 rounded-full text-xs md:text-sm font-semibold ${getGemschigradColor(gemschigrad)}`}>
+              <div key={gemschigrad} className={index > 0 ? 'border-t border-gray-200 pt-6' : ''}>
+                <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                  <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getGemschigradColor(gemschigrad)}`}>
                     {gemschigrad}
                   </span>
                 </h3>
@@ -50,12 +50,12 @@ export const Info: React.FC = () => {
                   {tenueData[gemschigrad].map((item) => (
                     <div
                       key={item.id}
-                      className="flex items-center gap-2 md:gap-3 p-2 md:p-3 bg-chnebel-gray rounded-lg hover:bg-gray-200 transition-colors"
+                      className="flex items-center gap-3 p-3 bg-chnebel-gray rounded-lg hover:bg-gray-200 transition-colors"
                     >
-                      <div className="flex-shrink-0 w-7 h-7 md:w-8 md:h-8 rounded-full bg-chnebel-red flex items-center justify-center text-white text-xs md:text-sm font-semibold">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-chnebel-red flex items-center justify-center text-white font-semibold">
                         {item.order}
                       </div>
-                      <span className="flex-1 text-sm md:text-base">{item.text}</span>
+                      <span className="flex-1">{item.text}</span>
                     </div>
                   ))}
                 </div>

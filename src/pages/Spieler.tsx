@@ -117,13 +117,13 @@ export const Spieler: React.FC = () => {
     <>
       <PageTitle>Spieler</PageTitle>
 
-      <div className="w-full">
+      <div className="overflow-x-auto">
         <table className="w-full border-collapse bg-white rounded-lg shadow-sm overflow-hidden">
           <thead>
             <tr className="bg-gradient-to-r from-chnebel-red to-[#c4161e] text-white">
-              <th className="px-2 md:px-4 lg:px-6 py-2 md:py-3 lg:py-4 text-left text-xs md:text-sm lg:text-base font-semibold">Name</th>
-              <th className="px-2 md:px-4 lg:px-6 py-2 md:py-3 lg:py-4 text-left text-xs md:text-sm lg:text-base font-semibold">Gemschigrad</th>
-              <th className="px-2 md:px-4 lg:px-6 py-2 md:py-3 lg:py-4 text-left text-xs md:text-sm lg:text-base font-semibold">Klassierung</th>
+              <th className="px-6 py-4 text-left font-semibold">Name</th>
+              <th className="px-6 py-4 text-left font-semibold">Gemschigrad</th>
+              <th className="px-6 py-4 text-left font-semibold">Klassierung</th>
             </tr>
           </thead>
           <tbody>
@@ -138,23 +138,23 @@ export const Spieler: React.FC = () => {
                   ${index === sortedPlayers.length - 1 ? '' : 'border-b'}
                 `}
               >
-                <td className="px-2 md:px-4 lg:px-6 py-2 md:py-3 lg:py-4 text-xs md:text-sm lg:text-base text-chnebel-black font-medium">
+                <td className="px-6 py-4 text-chnebel-black font-medium">
                   <div className="flex flex-col">
-                    <span className="flex items-center gap-1 md:gap-2">
-                      <span className="break-words">{player.name}</span>
-                      {getRoleEmoji(player.role) && <span className="text-yellow-500 text-xs md:text-sm lg:text-base flex-shrink-0">{getRoleEmoji(player.role)}</span>}
+                    <span className="flex items-center gap-2">
+                      {player.name}
+                      {getRoleEmoji(player.role) && <span className="text-yellow-500">{getRoleEmoji(player.role)}</span>}
                     </span>
                     {player.alias && (
-                      <span className="text-xs text-gray-500 italic break-words">"{player.alias}"</span>
+                      <span className="text-sm text-gray-500 italic">"{player.alias}"</span>
                     )}
                   </div>
                 </td>
-                <td className="px-2 md:px-4 lg:px-6 py-2 md:py-3 lg:py-4">
-                  <span className={`px-1.5 md:px-2 lg:px-3 py-0.5 md:py-1 rounded-full text-xs font-semibold ${getGemschigradColor(player.gemschigrad)}`}>
+                <td className="px-6 py-4">
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getGemschigradColor(player.gemschigrad)}`}>
                     {player.gemschigrad}
                   </span>
                 </td>
-                <td className="px-2 md:px-4 lg:px-6 py-2 md:py-3 lg:py-4 text-xs md:text-sm lg:text-base text-chnebel-black font-semibold whitespace-nowrap">{player.klassierung}</td>
+                <td className="px-6 py-4 text-chnebel-black font-semibold">{player.klassierung}</td>
               </tr>
             ))}
           </tbody>
@@ -164,33 +164,33 @@ export const Spieler: React.FC = () => {
       {/* Player Detail Modal */}
       {selectedPlayer && (
         <div
-          className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-2 md:p-4"
+          className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4"
           onClick={handleCloseModal}
         >
           <div
-            className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[95vh] md:max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-chnebel-red to-[#c4161e] text-white p-4 md:p-6 rounded-t-lg sticky top-0 z-10">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-xl md:text-2xl font-bold mb-2 flex items-center gap-2 break-words">
+            <div className="bg-gradient-to-r from-chnebel-red to-[#c4161e] text-white p-6 rounded-t-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
                     {selectedPlayer.name}
-                    {getRoleEmoji(selectedPlayer.role) && <span className="text-yellow-300 text-lg md:text-xl">{getRoleEmoji(selectedPlayer.role)}</span>}
+                    {getRoleEmoji(selectedPlayer.role) && <span className="text-yellow-300">{getRoleEmoji(selectedPlayer.role)}</span>}
                   </h2>
                   {selectedPlayer.alias && (
-                    <p className="text-base md:text-lg text-white/80 italic mb-2 break-words">"{selectedPlayer.alias}"</p>
+                    <p className="text-lg text-white/80 italic mb-2">"{selectedPlayer.alias}"</p>
                   )}
-                  <div className="flex flex-wrap items-center gap-2 md:gap-3">
-                    <span className={`px-2 md:px-3 py-1 rounded-full text-xs md:text-sm font-semibold bg-white/20 backdrop-blur-sm`}>
+                  <div className="flex items-center gap-3">
+                    <span className={`px-3 py-1 rounded-full text-sm font-semibold bg-white/20 backdrop-blur-sm`}>
                       {selectedPlayer.gemschigrad}
                     </span>
-                    <span className="px-2 md:px-3 py-1 rounded-full text-xs md:text-sm font-semibold bg-white/20 backdrop-blur-sm">
+                    <span className="px-3 py-1 rounded-full text-sm font-semibold bg-white/20 backdrop-blur-sm">
                       {selectedPlayer.klassierung}
                     </span>
                     {(selectedPlayer.role === 'Captain' || selectedPlayer.role === 'CEO of Patchio') && (
-                      <span className="px-2 md:px-3 py-1 rounded-full text-xs md:text-sm font-semibold bg-white/20 backdrop-blur-sm">
+                      <span className="px-3 py-1 rounded-full text-sm font-semibold bg-white/20 backdrop-blur-sm">
                         {getRoleEmoji(selectedPlayer.role)} {selectedPlayer.role}
                       </span>
                     )}
@@ -198,10 +198,10 @@ export const Spieler: React.FC = () => {
                 </div>
                 <button
                   onClick={handleCloseModal}
-                  className="text-white hover:bg-white/20 rounded-full p-2 transition-colors flex-shrink-0"
+                  className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
                   aria-label="Close"
                 >
-                  <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
@@ -209,13 +209,13 @@ export const Spieler: React.FC = () => {
             </div>
 
             {/* Modal Content */}
-            <div className="p-4 md:p-6">
+            <div className="p-6">
               {/* Statistics */}
               <section>
-                <h3 className="text-lg md:text-xl font-semibold text-chnebel-black mb-3 md:mb-4">Statistiken</h3>
+                <h3 className="text-xl font-semibold text-chnebel-black mb-4">Statistiken</h3>
 
                 {/* Gemschi Score Components */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-4 md:mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                   <div className="bg-white border border-gray-200 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-chnebel-black">Interclubanwesenheit</span>
@@ -324,17 +324,17 @@ export const Spieler: React.FC = () => {
                 </div>
 
                 {/* Gemschi Score Bar - Main Stat */}
-                <div className="mt-4 md:mt-6 bg-gradient-to-br from-chnebel-gray to-gray-100 rounded-lg p-4 md:p-6 border-2 border-chnebel-red/20">
-                  <div className="flex items-center justify-between mb-2 md:mb-3">
-                    <span className="text-xl md:text-2xl font-bold text-chnebel-black">Gemschi Score</span>
+                <div className="mt-6 bg-gradient-to-br from-chnebel-gray to-gray-100 rounded-lg p-6 border-2 border-chnebel-red/20">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-2xl font-bold text-chnebel-black">Gemschi Score</span>
                     <span 
-                      className="text-xl md:text-2xl font-bold"
+                      className="text-2xl font-bold"
                       style={{ color: getGemschiScoreColor(calculateGemschiScore(selectedPlayer)) }}
                     >
                       {calculateGemschiScore(selectedPlayer).toFixed(1)}%
                     </span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-5 md:h-6 overflow-hidden shadow-inner">
+                  <div className="w-full bg-gray-200 rounded-full h-6 overflow-hidden shadow-inner">
                     <div
                       className="h-full rounded-full transition-all duration-500 shadow-lg"
                       style={{ 

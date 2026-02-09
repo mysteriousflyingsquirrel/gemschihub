@@ -904,36 +904,36 @@ export const Admin: React.FC = () => {
       {/* Results Entry Modal */}
       {resultsModalEvent && (
         <div
-          className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-2 md:p-4"
+          className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4"
           onClick={handleCloseResultsModal}
         >
           <div
-            className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[95vh] md:max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-chnebel-red to-[#c4161e] text-white p-4 md:p-6 rounded-t-lg sticky top-0 z-10">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-xl md:text-2xl font-bold mb-2">Ergebnisse eingeben</h2>
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm md:text-base text-white/90">
+            <div className="bg-gradient-to-r from-chnebel-red to-[#c4161e] text-white p-6 rounded-t-lg sticky top-0 z-10">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold mb-2">Ergebnisse eingeben</h2>
+                  <div className="flex items-center gap-4 text-white/90">
                     <span>📅 {resultsModalEvent.datum}</span>
                     <span>📍 {resultsModalEvent.ort}</span>
-                    <span className="break-words">vs. {resultsModalEvent.gegner}</span>
+                    <span>vs. {resultsModalEvent.gegner}</span>
                   </div>
                 </div>
                 <button
                   onClick={handleCloseResultsModal}
-                  className="text-white hover:bg-white/20 rounded-full p-2 transition-colors flex-shrink-0"
+                  className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
                   aria-label="Close"
                 >
-                  <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
               {/* Step Indicator */}
-              <div className="flex items-center gap-2 mt-3 md:mt-4">
+              <div className="flex items-center gap-2 mt-4">
                 <div className={`flex-1 h-2 rounded ${resultsStep >= 1 ? 'bg-white' : 'bg-white/30'}`} />
                 <div className={`flex-1 h-2 rounded ${resultsStep >= 2 ? 'bg-white' : 'bg-white/30'}`} />
                 <div className={`flex-1 h-2 rounded ${resultsStep >= 3 ? 'bg-white' : 'bg-white/30'}`} />
@@ -941,17 +941,17 @@ export const Admin: React.FC = () => {
             </div>
 
             {/* Modal Content */}
-            <div className="p-4 md:p-6">
+            <div className="p-6">
               {/* Step 1: Select Attendees */}
               {resultsStep === 1 && (
                 <div>
-                  <h3 className="text-lg md:text-xl font-semibold text-chnebel-black mb-3 md:mb-4">Spieler auswählen</h3>
-                  <p className="text-sm md:text-base text-gray-600 mb-3 md:mb-4">Wählen Sie die Spieler aus, die an diesem Event teilgenommen haben:</p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
+                  <h3 className="text-xl font-semibold text-chnebel-black mb-4">Spieler auswählen</h3>
+                  <p className="text-gray-600 mb-4">Wählen Sie die Spieler aus, die an diesem Event teilgenommen haben:</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {players.map((player) => (
                       <label
                         key={player.id}
-                        className={`flex items-center gap-2 md:gap-3 p-2 md:p-3 border-2 rounded-lg cursor-pointer transition-colors ${
+                        className={`flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors ${
                           selectedAttendees.includes(player.id)
                             ? 'border-chnebel-red bg-red-50'
                             : 'border-gray-200 hover:border-gray-300'
@@ -967,11 +967,11 @@ export const Admin: React.FC = () => {
                               setSelectedAttendees(selectedAttendees.filter(id => id !== player.id));
                             }
                           }}
-                          className="w-5 h-5 text-chnebel-red border-gray-300 rounded focus:ring-chnebel-red flex-shrink-0"
+                          className="w-5 h-5 text-chnebel-red border-gray-300 rounded focus:ring-chnebel-red"
                         />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm md:text-base text-chnebel-black break-words">{player.name}</div>
-                          {player.alias && <div className="text-xs md:text-sm text-gray-500 italic break-words">{player.alias}</div>}
+                        <div className="flex-1">
+                          <div className="font-medium text-chnebel-black">{player.name}</div>
+                          {player.alias && <div className="text-sm text-gray-500 italic">{player.alias}</div>}
                         </div>
                       </label>
                     ))}
@@ -982,14 +982,14 @@ export const Admin: React.FC = () => {
               {/* Step 2: Singles Games (1-6) */}
               {resultsStep === 2 && (
                 <div>
-                  <h3 className="text-lg md:text-xl font-semibold text-chnebel-black mb-3 md:mb-4">Einzelspiele (Spiel 1-6)</h3>
-                  <div className="space-y-4 md:space-y-6">
+                  <h3 className="text-xl font-semibold text-chnebel-black mb-4">Einzelspiele (Spiel 1-6)</h3>
+                  <div className="space-y-6">
                     {singlesGamesData.map((game: SinglesGame, index: number) => (
-                      <div key={game.gameNumber} className="border border-gray-200 rounded-lg p-3 md:p-4">
-                        <h4 className="font-semibold text-base md:text-lg text-chnebel-black mb-2 md:mb-3">Spiel {game.gameNumber}</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+                      <div key={game.gameNumber} className="border border-gray-200 rounded-lg p-4">
+                        <h4 className="font-semibold text-chnebel-black mb-3">Spiel {game.gameNumber}</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">Spieler</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Spieler</label>
                             <select
                               value={game.playerId || ''}
                               onChange={(e) => {
@@ -997,7 +997,7 @@ export const Admin: React.FC = () => {
                                 updated[index].playerId = e.target.value || null;
                                 setSinglesGamesData(updated);
                               }}
-                              className="w-full px-2 md:px-3 py-2 text-sm md:text-base border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
+                              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
                             >
                               <option value="">-- Spieler wählen --</option>
                               {selectedAttendees.map(playerId => {
@@ -1009,17 +1009,17 @@ export const Admin: React.FC = () => {
                             </select>
                           </div>
                           <div>
-                            <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">Gegner</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Gegner</label>
                             <input
                               type="text"
                               value={resultsModalEvent.gegner}
                               disabled
-                              className="w-full px-2 md:px-3 py-2 text-sm md:text-base border border-gray-300 rounded bg-gray-100 text-gray-600"
+                              className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-100 text-gray-600"
                             />
                           </div>
                           {/* Set 1 */}
                           <div>
-                            <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">Satz 1</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Satz 1</label>
                             <div className="flex items-center gap-2">
                               <input
                                 type="number"
@@ -1034,10 +1034,10 @@ export const Admin: React.FC = () => {
                                   };
                                   setSinglesGamesData(updated);
                                 }}
-                                className="w-full px-2 md:px-3 py-2 text-sm md:text-base border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
+                                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
                                 placeholder="0"
                               />
-                              <span className="text-gray-500 text-sm md:text-base">:</span>
+                              <span className="text-gray-500">:</span>
                               <input
                                 type="number"
                                 min="0"
@@ -1051,14 +1051,14 @@ export const Admin: React.FC = () => {
                                   };
                                   setSinglesGamesData(updated);
                                 }}
-                                className="w-full px-2 md:px-3 py-2 text-sm md:text-base border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
+                                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
                                 placeholder="0"
                               />
                             </div>
                           </div>
                           {/* Set 2 */}
                           <div>
-                            <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">Satz 2</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Satz 2</label>
                             <div className="flex items-center gap-2">
                               <input
                                 type="number"
@@ -1073,10 +1073,10 @@ export const Admin: React.FC = () => {
                                   };
                                   setSinglesGamesData(updated);
                                 }}
-                                className="w-full px-2 md:px-3 py-2 text-sm md:text-base border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
+                                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
                                 placeholder="0"
                               />
-                              <span className="text-gray-500 text-sm md:text-base">:</span>
+                              <span className="text-gray-500">:</span>
                               <input
                                 type="number"
                                 min="0"
@@ -1090,7 +1090,7 @@ export const Admin: React.FC = () => {
                                   };
                                   setSinglesGamesData(updated);
                                 }}
-                                className="w-full px-2 md:px-3 py-2 text-sm md:text-base border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
+                                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
                                 placeholder="0"
                               />
                             </div>
@@ -1147,14 +1147,14 @@ export const Admin: React.FC = () => {
               {/* Step 3: Doubles Games (7-9) */}
               {resultsStep === 3 && (
                 <div>
-                  <h3 className="text-lg md:text-xl font-semibold text-chnebel-black mb-3 md:mb-4">Doppelspiele (Spiel 7-9)</h3>
-                  <div className="space-y-4 md:space-y-6">
+                  <h3 className="text-xl font-semibold text-chnebel-black mb-4">Doppelspiele (Spiel 7-9)</h3>
+                  <div className="space-y-6">
                     {doublesGamesData.map((game: DoublesGame, index: number) => (
-                      <div key={game.gameNumber} className="border border-gray-200 rounded-lg p-3 md:p-4">
-                        <h4 className="font-semibold text-base md:text-lg text-chnebel-black mb-2 md:mb-3">Spiel {game.gameNumber}</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+                      <div key={game.gameNumber} className="border border-gray-200 rounded-lg p-4">
+                        <h4 className="font-semibold text-chnebel-black mb-3">Spiel {game.gameNumber}</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">Spieler 1</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Spieler 1</label>
                             <select
                               value={game.player1Id || ''}
                               onChange={(e) => {
@@ -1162,7 +1162,7 @@ export const Admin: React.FC = () => {
                                 updated[index].player1Id = e.target.value || null;
                                 setDoublesGamesData(updated);
                               }}
-                              className="w-full px-2 md:px-3 py-2 text-sm md:text-base border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
+                              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
                             >
                               <option value="">-- Spieler wählen --</option>
                               {selectedAttendees.map(playerId => {
@@ -1174,7 +1174,7 @@ export const Admin: React.FC = () => {
                             </select>
                           </div>
                           <div>
-                            <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">Spieler 2</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Spieler 2</label>
                             <select
                               value={game.player2Id || ''}
                               onChange={(e) => {
@@ -1182,7 +1182,7 @@ export const Admin: React.FC = () => {
                                 updated[index].player2Id = e.target.value || null;
                                 setDoublesGamesData(updated);
                               }}
-                              className="w-full px-2 md:px-3 py-2 text-sm md:text-base border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
+                              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
                             >
                               <option value="">-- Spieler wählen --</option>
                               {selectedAttendees.map(playerId => {
@@ -1194,17 +1194,17 @@ export const Admin: React.FC = () => {
                             </select>
                           </div>
                           <div>
-                            <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">Gegner</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Gegner</label>
                             <input
                               type="text"
                               value={resultsModalEvent.gegner}
                               disabled
-                              className="w-full px-2 md:px-3 py-2 text-sm md:text-base border border-gray-300 rounded bg-gray-100 text-gray-600"
+                              className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-100 text-gray-600"
                             />
                           </div>
                           {/* Set 1 */}
                           <div>
-                            <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">Satz 1</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Satz 1</label>
                             <div className="flex items-center gap-2">
                               <input
                                 type="number"
@@ -1219,10 +1219,10 @@ export const Admin: React.FC = () => {
                                   };
                                   setDoublesGamesData(updated);
                                 }}
-                                className="w-full px-2 md:px-3 py-2 text-sm md:text-base border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
+                                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
                                 placeholder="0"
                               />
-                              <span className="text-gray-500 text-sm md:text-base">:</span>
+                              <span className="text-gray-500">:</span>
                               <input
                                 type="number"
                                 min="0"
@@ -1236,14 +1236,14 @@ export const Admin: React.FC = () => {
                                   };
                                   setDoublesGamesData(updated);
                                 }}
-                                className="w-full px-2 md:px-3 py-2 text-sm md:text-base border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
+                                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
                                 placeholder="0"
                               />
                             </div>
                           </div>
                           {/* Set 2 */}
                           <div>
-                            <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">Satz 2</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Satz 2</label>
                             <div className="flex items-center gap-2">
                               <input
                                 type="number"
@@ -1258,10 +1258,10 @@ export const Admin: React.FC = () => {
                                   };
                                   setDoublesGamesData(updated);
                                 }}
-                                className="w-full px-2 md:px-3 py-2 text-sm md:text-base border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
+                                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
                                 placeholder="0"
                               />
-                              <span className="text-gray-500 text-sm md:text-base">:</span>
+                              <span className="text-gray-500">:</span>
                               <input
                                 type="number"
                                 min="0"
@@ -1275,7 +1275,7 @@ export const Admin: React.FC = () => {
                                   };
                                   setDoublesGamesData(updated);
                                 }}
-                                className="w-full px-2 md:px-3 py-2 text-sm md:text-base border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
+                                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
                                 placeholder="0"
                               />
                             </div>
@@ -1284,7 +1284,7 @@ export const Admin: React.FC = () => {
                           {((game.set1 && game.set1.ourScore !== game.set1.opponentScore) || 
                             (game.set2 && game.set2.ourScore !== game.set2.opponentScore)) && (
                             <div className="md:col-span-2">
-                              <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">Satz 3 (falls nötig)</label>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Satz 3 (falls nötig)</label>
                               <div className="flex items-center gap-2">
                                 <input
                                   type="number"
@@ -1299,10 +1299,10 @@ export const Admin: React.FC = () => {
                                     };
                                     setDoublesGamesData(updated);
                                   }}
-                                  className="w-full px-2 md:px-3 py-2 text-sm md:text-base border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
+                                  className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
                                   placeholder="0"
                                 />
-                                <span className="text-gray-500 text-sm md:text-base">:</span>
+                                <span className="text-gray-500">:</span>
                                 <input
                                   type="number"
                                   min="0"
@@ -1316,7 +1316,7 @@ export const Admin: React.FC = () => {
                                     };
                                     setDoublesGamesData(updated);
                                   }}
-                                  className="w-full px-2 md:px-3 py-2 text-sm md:text-base border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
+                                  className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
                                   placeholder="0"
                                 />
                               </div>
@@ -1330,10 +1330,10 @@ export const Admin: React.FC = () => {
               )}
 
               {/* Modal Footer */}
-              <div className="flex items-center justify-between mt-4 md:mt-6 pt-4 md:pt-6 border-t border-gray-200 gap-2">
+              <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200">
                 <button
                   onClick={resultsStep > 1 ? () => setResultsStep((resultsStep - 1) as 1 | 2 | 3) : handleCloseResultsModal}
-                  className="px-3 md:px-4 py-2 text-sm md:text-base text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
                 >
                   {resultsStep > 1 ? 'Zurück' : 'Abbrechen'}
                 </button>
@@ -1341,14 +1341,14 @@ export const Admin: React.FC = () => {
                   {resultsStep < 3 ? (
                     <button
                       onClick={handleNextStep}
-                      className="px-4 md:px-6 py-2 text-sm md:text-base bg-chnebel-red text-white rounded hover:bg-[#c4161e] transition-colors font-semibold"
+                      className="px-6 py-2 bg-chnebel-red text-white rounded hover:bg-[#c4161e] transition-colors font-semibold"
                     >
                       Weiter
                     </button>
                   ) : (
                     <button
                       onClick={handleSaveResults}
-                      className="px-4 md:px-6 py-2 text-sm md:text-base bg-green-600 text-white rounded hover:bg-green-700 transition-colors font-semibold"
+                      className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors font-semibold"
                     >
                       Speichern
                     </button>

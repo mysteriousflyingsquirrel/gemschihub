@@ -81,7 +81,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileMenuOpen, onMobileMenu
             <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-chnebel-red"></div>
           </div>
           <h1 className="text-white text-xl font-bold text-center m-0 drop-shadow-lg">
-            Chnebel Gemscheni
+            GemschiHub
           </h1>
           <div className="w-16 h-1 bg-white/30 rounded-full"></div>
         </div>
