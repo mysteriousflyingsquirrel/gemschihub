@@ -69,18 +69,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileMenuOpen, onMobileMenu
         `}
       >
         {/* Header with Logo */}
-        <div className="p-6 bg-gradient-to-r from-chnebel-red to-[#c4161e] flex flex-col items-center gap-3 shadow-lg">
-          <div className="relative">
-            <img
-              src={logo}
-              alt="Chnebel Logo"
-              className="w-24 h-24 object-contain rounded-full bg-white/10 p-2 shadow-lg"
-            />
+        <div className="p-5 bg-gradient-to-r from-chnebel-red to-[#c4161e] flex flex-col items-center gap-3 shadow-lg flex-shrink-0">
+          <img
+            src={logo}
+            alt="Chnebel Logo"
+            className="w-32 h-32 object-cover rounded-lg bg-white/10 p-1 shadow-lg flex-shrink-0"
+          />
+          <div className="text-center">
+            <h1 className="text-white text-xl font-bold leading-tight m-0 drop-shadow-lg">
+              GemschiHub
+            </h1>
           </div>
-          <h1 className="text-white text-xl font-bold text-center m-0 drop-shadow-lg">
-            GemschiHub
-          </h1>
-          <div className="w-16 h-1 bg-white/30 rounded-full"></div>
         </div>
 
         {/* Season Selector */}

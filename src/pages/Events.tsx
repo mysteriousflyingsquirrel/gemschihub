@@ -91,8 +91,8 @@ export const Events: React.FC = () => {
         ))}
       </div>
 
-      {/* Events Table */}
-      <div className="overflow-x-auto">
+      {/* Desktop table */}
+      <div className="hidden md:block">
         <table className="w-full border-collapse bg-white rounded-lg shadow-sm overflow-hidden">
           <thead>
             <tr className="bg-gradient-to-r from-chnebel-red to-[#c4161e] text-white">
@@ -164,6 +164,53 @@ export const Events: React.FC = () => {
         </table>
       </div>
 
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3">
+        {filteredEvents.length === 0 && (
+          <div className="bg-white rounded-lg shadow-sm p-6 text-center text-gray-500">
+            Keine Events in dieser Saison
+          </div>
+        )}
+        {filteredEvents.map((event) => {
+          const status = deriveEventStatus(event.startDateTime);
+          const statusBadge = getStatusBadge(status);
+          const isNext = event.id === nextEventId;
+          return (
+            <div
+              key={event.id}
+              onClick={() => setSelectedEvent(event)}
+              className={`bg-white rounded-lg shadow-sm border-2 p-4 cursor-pointer active:scale-[0.98] transition-all ${
+                isNext ? 'border-chnebel-red bg-chnebel-red/5' : 'border-gray-200'
+              }`}
+            >
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-xl flex-shrink-0">{getEventTypeIcon(event.type)}</span>
+                  <span className="font-medium text-chnebel-black truncate">{event.title}</span>
+                  {isNext && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-chnebel-red text-white uppercase tracking-wide flex-shrink-0">
+                      Next
+                    </span>
+                  )}
+                </div>
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${statusBadge.color}`}>
+                  {statusBadge.text}
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600">
+                <span>📅 {formatDate(event.startDateTime)}</span>
+                {event.location && <span>📍 {event.location}</span>}
+                {event.interclub && (
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getScoreColor(event.interclub.totalScore.ourScore, event.interclub.totalScore.opponentScore)}`}>
+                    {event.interclub.totalScore.ourScore}:{event.interclub.totalScore.opponentScore}
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
       {/* Event Detail Modal */}
       {selectedEvent && (
         <div
@@ -203,7 +250,9 @@ export const Events: React.FC = () => {
                 <>
                   {/* Match Status */}
                   <section className="mb-6">
-                    <h3 className="text-xl font-semibold text-chnebel-black mb-3">Match Status</h3>
+                    <div className="bg-chnebel-red px-4 py-2 rounded-lg mb-3">
+                      <h3 className="text-sm font-bold text-white tracking-wide">Match Status</h3>
+                    </div>
                     {(() => {
                       const ms = getMatchStatusBadge(selectedEvent.interclub!.matchStatus);
                       return (
@@ -220,7 +269,9 @@ export const Events: React.FC = () => {
                   {/* Total Score */}
                   {selectedEvent.interclub.matchStatus !== 'Offen' && (
                     <section className="mb-6">
-                      <h3 className="text-xl font-semibold text-chnebel-black mb-3">Gesamtscore</h3>
+                      <div className="bg-chnebel-red px-4 py-2 rounded-lg mb-3">
+                        <h3 className="text-sm font-bold text-white tracking-wide">Gesamtscore</h3>
+                      </div>
                       <div className="bg-chnebel-gray rounded-lg p-4">
                         <div className="flex items-center justify-center gap-4">
                           <div className="text-center">
@@ -247,7 +298,9 @@ export const Events: React.FC = () => {
                   {/* Singles Results */}
                   {selectedEvent.interclub.matchStatus !== 'Offen' && (
                     <section className="mb-6">
-                      <h3 className="text-xl font-semibold text-chnebel-black mb-3">Einzelspiele</h3>
+                      <div className="bg-chnebel-red px-4 py-2 rounded-lg mb-3">
+                        <h3 className="text-sm font-bold text-white tracking-wide">Einzelspiele</h3>
+                      </div>
                       <div className="space-y-2">
                         {selectedEvent.interclub.singlesGames.map(game => {
                           if (!game.playerId || !game.set1) return null;
@@ -270,7 +323,9 @@ export const Events: React.FC = () => {
                   {/* Doubles Results */}
                   {selectedEvent.interclub.matchStatus !== 'Offen' && (
                     <section className="mb-6">
-                      <h3 className="text-xl font-semibold text-chnebel-black mb-3">Doppelspiele</h3>
+                      <div className="bg-chnebel-red px-4 py-2 rounded-lg mb-3">
+                        <h3 className="text-sm font-bold text-white tracking-wide">Doppelspiele</h3>
+                      </div>
                       <div className="space-y-2">
                         {selectedEvent.interclub.doublesGames.map(game => {
                           if (!game.player1Id || !game.player2Id || !game.set1) return null;
@@ -309,9 +364,9 @@ export const Events: React.FC = () => {
 
               {/* Attendance (all event types) */}
               <section>
-                <h3 className="text-xl font-semibold text-chnebel-black mb-3">
-                  Anwesende ({eventAttendees.length})
-                </h3>
+                <div className="bg-chnebel-red px-4 py-2 rounded-lg mb-3">
+                  <h3 className="text-sm font-bold text-white tracking-wide">Anwesende ({eventAttendees.length})</h3>
+                </div>
                 {eventAttendees.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {eventAttendees.map(att => {

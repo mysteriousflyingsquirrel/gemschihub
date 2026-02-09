@@ -1,5 +1,4 @@
 import React from 'react';
-import logo from '../assets/chnebel-logo.jpg';
 
 interface TopbarProps {
   isMenuOpen: boolean;
@@ -43,16 +42,9 @@ export const Topbar: React.FC<TopbarProps> = ({ isMenuOpen, onMenuToggle }) => {
         <HamburgerIcon isOpen={isMenuOpen} />
       </button>
       
-      <div className="flex items-center gap-3 ml-4">
-        <img
-          src={logo}
-          alt="Chnebel Logo"
-          className="w-10 h-10 object-contain rounded-full bg-white/10 p-1"
-        />
-        <h1 className="text-white text-lg font-bold drop-shadow-lg">
-          GemschiHub
-        </h1>
-      </div>
+      <h1 className="text-white text-lg font-bold drop-shadow-lg ml-4">
+        GemschiHub
+      </h1>
     </div>
   );
 };

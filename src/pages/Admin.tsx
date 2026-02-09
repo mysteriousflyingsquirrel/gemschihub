@@ -8,7 +8,7 @@ import { useSpirit } from '../contexts/SpiritContext';
 import { useInfo } from '../contexts/InfoContext';
 import { useAuth } from '../contexts/AuthContext';
 import { AppEvent, EventType, SinglesGame, DoublesGame, createEmptySinglesGames, createEmptyDoublesGames } from '../types/event';
-import { Gemschigrad, Klassierung, PlayerRole } from '../types/player';
+import { Player, Gemschigrad, Klassierung, PlayerRole } from '../types/player';
 
 const gemschigrads: Gemschigrad[] = ['Ehrengemschi', 'Kuttengemschi', 'Bandanagemschi', 'Gitzi'];
 const klassierungen: Klassierung[] = ['N1', 'N2', 'N3', 'N4', 'R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9'];
@@ -18,17 +18,19 @@ const eventTypes: EventType[] = ['Training', 'Interclub', 'Spirit'];
 const CollapsibleSection: React.FC<{ title: string; icon: string; children: React.ReactNode }> = ({ title, icon, children }) => {
   const [open, setOpen] = useState(false);
   return (
-    <section className="bg-white rounded-lg p-6 shadow-sm">
-      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between text-left mb-4">
-        <h2 className="text-2xl font-semibold text-chnebel-black flex items-center gap-2">
-          <span className="text-2xl">{icon}</span> {title}
+    <section className="bg-white rounded-lg shadow-sm overflow-hidden">
+      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between text-left bg-chnebel-red px-5 py-3">
+        <h2 className="text-lg font-bold text-white tracking-wide flex items-center gap-2">
+          <span>{icon}</span> {title}
         </h2>
-        <svg className={`w-6 h-6 text-chnebel-black transition-transform duration-200 ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className={`w-5 h-5 text-white transition-transform duration-200 ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
       <div className={`overflow-hidden transition-all duration-300 ease-in-out ${open ? 'max-h-[10000px] opacity-100' : 'max-h-0 opacity-0'}`}>
-        {children}
+        <div className="p-6">
+          {children}
+        </div>
       </div>
     </section>
   );
@@ -38,7 +40,7 @@ export const Admin: React.FC = () => {
   const { isAdmin } = useAuth();
   const { seasons, addSeason, setActiveSeason, removeSeason, selectedSeasonId } = useSeasons();
   const { events, addEvent, updateEvent, removeEvent } = useEvents();
-  const { players, addPlayer, removePlayer } = usePlayers();
+  const { players, addPlayer, updatePlayer, removePlayer } = usePlayers();
   const { getEventAttendees, setEventAttendance } = useAttendance();
   const { spirit, setPlayerSpirit } = useSpirit();
   const { tenueData, addTenueItem, updateTenueItem, removeTenueItem } = useInfo();
@@ -60,6 +62,13 @@ export const Admin: React.FC = () => {
   const [newPlayerRole, setNewPlayerRole] = useState<PlayerRole>('Spieler');
   const [newPlayerGrad, setNewPlayerGrad] = useState<Gemschigrad>('Gitzi');
   const [newPlayerKlass, setNewPlayerKlass] = useState<Klassierung>('R9');
+  // --- Edit player modal ---
+  const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
+  const [editPlayerName, setEditPlayerName] = useState('');
+  const [editPlayerAlias, setEditPlayerAlias] = useState('');
+  const [editPlayerRole, setEditPlayerRole] = useState<PlayerRole>('Spieler');
+  const [editPlayerGrad, setEditPlayerGrad] = useState<Gemschigrad>('Gitzi');
+  const [editPlayerKlass, setEditPlayerKlass] = useState<Klassierung>('R9');
   // --- Attendance modal ---
   const [attendanceEventId, setAttendanceEventId] = useState<string | null>(null);
   const [attendanceSelection, setAttendanceSelection] = useState<string[]>([]);
@@ -131,6 +140,27 @@ export const Admin: React.FC = () => {
     setNewPlayerRole('Spieler');
     setNewPlayerGrad('Gitzi');
     setNewPlayerKlass('R9');
+  };
+
+  const openEditPlayerModal = (player: Player) => {
+    setEditingPlayer(player);
+    setEditPlayerName(player.name);
+    setEditPlayerAlias(player.alias || '');
+    setEditPlayerRole(player.role);
+    setEditPlayerGrad(player.gemschigrad);
+    setEditPlayerKlass(player.klassierung);
+  };
+
+  const handleSavePlayer = async () => {
+    if (!editingPlayer || !editPlayerName.trim() || !editPlayerAlias.trim()) return;
+    await updatePlayer(editingPlayer.id, {
+      name: editPlayerName.trim(),
+      alias: editPlayerAlias.trim(),
+      role: editPlayerRole,
+      gemschigrad: editPlayerGrad,
+      klassierung: editPlayerKlass,
+    });
+    setEditingPlayer(null);
   };
 
   const openAttendanceModal = (eventId: string) => {
@@ -306,7 +336,8 @@ export const Admin: React.FC = () => {
                   <div className="font-medium text-chnebel-black">{player.name} {player.alias && <span className="text-gray-500 italic text-sm">"{player.alias}"</span>}</div>
                   <div className="text-sm text-gray-500">{player.role} · {player.gemschigrad} · {player.klassierung}</div>
                 </div>
-                <button onClick={() => { if (window.confirm(`Spieler "${player.name}" entfernen?`)) removePlayer(player.id); }} className="px-3 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600">🗑️</button>
+                <button onClick={() => openEditPlayerModal(player)} className="px-3 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600" title="Bearbeiten">✏️</button>
+                <button onClick={() => { if (window.confirm(`Spieler "${player.name}" entfernen?`)) removePlayer(player.id); }} className="px-3 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600" title="Entfernen">🗑️</button>
               </div>
             ))}
           </div>
@@ -384,6 +415,52 @@ export const Admin: React.FC = () => {
           </div>
         </CollapsibleSection>
       </div>
+
+      {/* === EDIT PLAYER MODAL === */}
+      {editingPlayer && (
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4" onClick={() => setEditingPlayer(null)}>
+          <div className="bg-white rounded-lg shadow-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="bg-gradient-to-r from-chnebel-red to-[#c4161e] text-white p-4 rounded-t-lg flex items-center justify-between">
+              <h2 className="text-xl font-bold">Spieler bearbeiten</h2>
+              <button onClick={() => setEditingPlayer(null)} className="text-white hover:bg-white/20 rounded-full p-1">✕</button>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                  <input type="text" value={editPlayerName} onChange={e => setEditPlayerName(e.target.value)} placeholder="Name" className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Alias</label>
+                  <input type="text" value={editPlayerAlias} onChange={e => setEditPlayerAlias(e.target.value)} placeholder="Alias" className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Rolle</label>
+                  <select value={editPlayerRole} onChange={e => setEditPlayerRole(e.target.value as PlayerRole)} className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red">
+                    {playerRoles.map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Gemschigrad</label>
+                  <select value={editPlayerGrad} onChange={e => setEditPlayerGrad(e.target.value as Gemschigrad)} className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red">
+                    {gemschigrads.map(g => <option key={g} value={g}>{g}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Klassierung</label>
+                  <select value={editPlayerKlass} onChange={e => setEditPlayerKlass(e.target.value as Klassierung)} className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red">
+                    {klassierungen.map(k => <option key={k} value={k}>{k}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="p-4 border-t flex justify-end gap-3">
+              <button onClick={() => setEditingPlayer(null)} className="px-4 py-2 text-gray-700 bg-gray-100 rounded hover:bg-gray-200">Abbrechen</button>
+              <button onClick={handleSavePlayer} disabled={!editPlayerName.trim() || !editPlayerAlias.trim()} className="px-6 py-2 bg-chnebel-red text-white rounded font-semibold hover:bg-[#c4161e] disabled:opacity-50">Speichern</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* === ATTENDANCE MODAL === */}
       {attendanceEventId && (

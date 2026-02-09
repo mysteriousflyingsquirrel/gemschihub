@@ -1,5 +1,6 @@
 import React from 'react';
 import { PageTitle } from '../components/PageTitle';
+import { SectionTitle } from '../components/SectionTitle';
 
 export const Verfassung: React.FC = () => {
   return (
@@ -9,8 +10,9 @@ export const Verfassung: React.FC = () => {
       <div className="space-y-8 text-chnebel-black leading-relaxed">
 
         {/* Geschichte */}
-        <section className="bg-white rounded-lg p-6 shadow-sm">
-          <h2 className="text-2xl font-semibold mb-4">Geschichte</h2>
+        <section className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <SectionTitle>Geschichte</SectionTitle>
+          <div className="p-6">
           <p className="mb-4">
             Die Chnebel Gemschi Verfassung (lateinisch <em>ilcamoxi iactus</em> [&#x02C8;Die G&auml;msen des Knebels]) ist eine langlebige Verfassung mit dem Ziel, durch Aufkl&auml;rung und sittliche Verbesserung die Herrschaft des Gemschi Sprits in die Chnebel Gemscheni zu vertiefen. Die Verfassung wurde am 12. November 2022 n. Chr. vom Kernteam der Chnebel Gemscheni in Rotterdam erbiert.
           </p>
@@ -20,11 +22,13 @@ export const Verfassung: React.FC = () => {
           <p>
             Zahlreiche Mythen und Verschw&ouml;rungstheorien ranken sich um das angebliche Fortbestehen der Chnebel Gemscheni und ihre angeblichen geheimen T&auml;tigkeiten, darunter die Tennis Revolution, der Kampf gegen die B&auml;llelibueben und das Streben nach Weltherrschaft.
           </p>
+          </div>
         </section>
 
         {/* Der GemschiCodex */}
-        <section className="bg-white rounded-lg p-6 shadow-sm">
-          <h2 className="text-2xl font-semibold mb-6">Der GemschiCodex</h2>
+        <section className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <SectionTitle>Der GemschiCodex</SectionTitle>
+          <div className="p-6">
 
           {/* Generelles */}
           <div className="mb-8">
@@ -143,6 +147,7 @@ export const Verfassung: React.FC = () => {
                 <p><strong>Art. 6b)</strong> Bussgelder und Bestrafungen werden gem&auml;ss Chnebel Gemschi Patch System verteilt.</p>
               </div>
             </div>
+          </div>
           </div>
         </section>
 

@@ -90,6 +90,8 @@ export const SeasonsProvider: React.FC<{ children: React.ReactNode }> = ({ child
       batch.update(doc(db, COLLECTION, season.id), { isActive: season.id === id });
     }
     await batch.commit();
+    // Switch to the newly activated season so downstream contexts reload data
+    setSelectedSeasonId(id);
   }, [seasons]);
 
   const removeSeason = useCallback(async (id: string) => {

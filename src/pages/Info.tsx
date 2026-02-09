@@ -1,5 +1,6 @@
 import React from 'react';
 import { PageTitle } from '../components/PageTitle';
+import { SectionTitle } from '../components/SectionTitle';
 import { useInfo } from '../contexts/InfoContext';
 import { useStatistics } from '../hooks/useStatistics';
 import { useSeasons } from '../contexts/SeasonsContext';
@@ -14,6 +15,15 @@ const getGemschigradColor = (grad: Gemschigrad) => {
   }
 };
 
+const getGemschigradBorder = (grad: Gemschigrad) => {
+  switch (grad) {
+    case 'Ehrengemschi': return 'border-yellow-400';
+    case 'Kuttengemschi': return 'border-blue-400';
+    case 'Bandanagemschi': return 'border-green-400';
+    case 'Gitzi': return 'border-purple-400';
+  }
+};
+
 export const Info: React.FC = () => {
   const { tenueData } = useInfo();
   const { teamStats } = useStatistics();
@@ -25,21 +35,21 @@ export const Info: React.FC = () => {
       <PageTitle>Info</PageTitle>
       <div className="space-y-6">
         {/* Welcome */}
-        <section className="bg-white rounded-lg p-6 shadow-sm">
-          <h2 className="text-2xl font-semibold text-chnebel-black mb-4">Willkommen bei Chnebel Gemscheni</h2>
-          <p className="text-chnebel-black leading-relaxed">
-            Dies ist GemschiHub — die zentrale Plattform für Chnebel Gemscheni. Hier findest du Events,
-            Spieler, Statistiken und alles rund ums Team.
-          </p>
+        <section className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <SectionTitle>Willkommen bei Chnebel Gemscheni</SectionTitle>
+          <div className="p-6">
+            <p className="text-chnebel-black leading-relaxed">
+              Dies ist GemschiHub — die zentrale Plattform für Chnebel Gemscheni. Hier findest du Events,
+              Spieler, Statistiken und alles rund ums Team.
+            </p>
+          </div>
         </section>
 
         {/* Team Stats */}
         {selectedSeason && (
-          <section className="bg-white rounded-lg p-6 shadow-sm">
-            <h2 className="text-2xl font-semibold text-chnebel-black mb-4 flex items-center gap-2">
-              <span>📊</span> Team-Statistiken ({selectedSeason.name})
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <section className="bg-white rounded-lg shadow-sm overflow-hidden">
+            <SectionTitle>Team-Statistiken ({selectedSeason.name})</SectionTitle>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6">
               <div className="bg-chnebel-gray rounded-lg p-4 text-center">
                 <div className="text-3xl font-bold text-chnebel-black">{teamStats.matchesPlayed}</div>
                 <div className="text-sm text-gray-600">Spiele</div>
@@ -61,28 +71,26 @@ export const Info: React.FC = () => {
         )}
 
         {/* Tenue */}
-        <section className="bg-white rounded-lg p-6 shadow-sm">
-          <h2 className="text-2xl font-semibold text-chnebel-black mb-6 flex items-center gap-2">
-            <span className="text-2xl">👕</span> Tenue
-          </h2>
-          <div className="space-y-6 text-chnebel-black">
-            {gemschigrads.map((gemschigrad, index) => (
-              <div key={gemschigrad} className={index > 0 ? 'border-t border-gray-200 pt-6' : ''}>
-                <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
-                  <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getGemschigradColor(gemschigrad)}`}>
-                    {gemschigrad}
-                  </span>
-                </h3>
-                <div className="space-y-2">
-                  {tenueData[gemschigrad].map((item) => (
-                    <div key={item.id} className="flex items-center gap-3 p-3 bg-chnebel-gray rounded-lg hover:bg-gray-200 transition-colors">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-chnebel-red flex items-center justify-center text-white font-semibold">
-                        {item.order}
-                      </div>
-                      <span className="flex-1">{item.text}</span>
-                    </div>
-                  ))}
+        <section className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="bg-chnebel-red px-5 py-3">
+            <h2 className="text-lg font-bold text-white tracking-wide">Tenue</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4">
+            {gemschigrads.map((gemschigrad) => (
+              <div key={gemschigrad} className={`rounded-lg border-2 ${getGemschigradBorder(gemschigrad)} overflow-hidden`}>
+                <div className={`px-4 py-2 ${getGemschigradColor(gemschigrad)}`}>
+                  <span className="text-sm font-bold">{gemschigrad}</span>
                 </div>
+                <ol className="space-y-1.5 text-sm text-chnebel-black p-3">
+                  {tenueData[gemschigrad].map((item) => (
+                    <li key={item.id} className="flex items-start gap-2">
+                      <span className="w-5 h-5 rounded-full bg-chnebel-red text-white text-xs flex items-center justify-center font-semibold flex-shrink-0 mt-0.5">
+                        {item.order}
+                      </span>
+                      <span>{item.text}</span>
+                    </li>
+                  ))}
+                </ol>
               </div>
             ))}
           </div>

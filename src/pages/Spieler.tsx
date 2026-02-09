@@ -38,18 +38,15 @@ export const Spieler: React.FC = () => {
     const gemOrder: Record<Player['gemschigrad'], number> = {
       Ehrengemschi: 0, Kuttengemschi: 1, Bandanagemschi: 2, Gitzi: 3,
     };
-    const roleOrder: Record<PlayerRole, number> = {
-      Captain: 0, 'CEO of Patchio': 1, Spieler: 2,
-    };
     const klassOrder: Record<Player['klassierung'], number> = {
       N1: 0, N2: 1, N3: 2, N4: 3, R1: 4, R2: 5, R3: 6, R4: 7, R5: 8, R6: 9, R7: 10, R8: 11, R9: 12,
     };
     return [...players].sort((a, b) => {
       const gd = gemOrder[a.gemschigrad] - gemOrder[b.gemschigrad];
       if (gd !== 0) return gd;
-      const rd = roleOrder[a.role] - roleOrder[b.role];
-      if (rd !== 0) return rd;
-      return klassOrder[a.klassierung] - klassOrder[b.klassierung];
+      const kd = klassOrder[a.klassierung] - klassOrder[b.klassierung];
+      if (kd !== 0) return kd;
+      return a.name.localeCompare(b.name);
     });
   }, [players]);
 
@@ -59,51 +56,119 @@ export const Spieler: React.FC = () => {
     <>
       <PageTitle>Spieler</PageTitle>
 
-      <div className="overflow-x-auto">
+      {/* Desktop table */}
+      <div className="hidden md:block">
         <table className="w-full border-collapse bg-white rounded-lg shadow-sm overflow-hidden">
           <thead>
             <tr className="bg-gradient-to-r from-chnebel-red to-[#c4161e] text-white">
               <th className="px-6 py-4 text-left font-semibold">Name</th>
               <th className="px-6 py-4 text-left font-semibold">Gemschigrad</th>
               <th className="px-6 py-4 text-left font-semibold">Klassierung</th>
+              <th className="px-6 py-4 text-left font-semibold">Gemschi Score</th>
             </tr>
           </thead>
           <tbody>
-            {sortedPlayers.map((player, index) => (
-              <tr
-                key={player.id}
-                onClick={() => setSelectedPlayer(player)}
-                className={`border-b border-gray-200 cursor-pointer transition-all duration-200 hover:bg-chnebel-gray hover:shadow-md active:scale-[0.98] ${index === sortedPlayers.length - 1 ? '' : 'border-b'}`}
-              >
-                <td className="px-6 py-4 text-chnebel-black font-medium">
-                  <div className="flex items-center gap-3">
-                    {/* Profile picture or placeholder */}
-                    <div className="w-10 h-10 rounded-full bg-chnebel-gray flex items-center justify-center text-chnebel-black font-semibold text-sm overflow-hidden flex-shrink-0">
-                      {player.profilePictureUrl ? (
-                        <img src={player.profilePictureUrl} alt={player.name} className="w-full h-full object-cover" />
-                      ) : (
-                        player.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
-                      )}
+            {sortedPlayers.map((player, index) => {
+              const stats = getPlayerStats(player.id);
+              const score = stats?.gemschiScore ?? 0;
+              return (
+                <tr
+                  key={player.id}
+                  onClick={() => setSelectedPlayer(player)}
+                  className={`border-b border-gray-200 cursor-pointer transition-all duration-200 hover:bg-chnebel-gray hover:shadow-md active:scale-[0.98] ${index === sortedPlayers.length - 1 ? '' : 'border-b'}`}
+                >
+                  <td className="px-6 py-4 text-chnebel-black font-medium">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-chnebel-gray flex items-center justify-center text-chnebel-black font-semibold text-sm overflow-hidden flex-shrink-0">
+                        {player.profilePictureUrl ? (
+                          <img src={player.profilePictureUrl} alt={player.name} className="w-full h-full object-cover" />
+                        ) : (
+                          player.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+                        )}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="flex items-center gap-2">
+                          {player.name}
+                          {getRoleEmoji(player.role) && <span className="text-yellow-500">{getRoleEmoji(player.role)}</span>}
+                        </span>
+                        {player.alias && <span className="text-sm text-gray-500 italic">"{player.alias}"</span>}
+                      </div>
                     </div>
-                    <div className="flex flex-col">
-                      <span className="flex items-center gap-2">
-                        {player.name}
-                        {getRoleEmoji(player.role) && <span className="text-yellow-500">{getRoleEmoji(player.role)}</span>}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getGemschigradColor(player.gemschigrad)}`}>
+                      {player.gemschigrad}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-chnebel-black font-semibold">{player.klassierung}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2 min-w-[120px]">
+                      <div className="flex-1 bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{ width: `${score}%`, backgroundColor: getScoreColor(score) }}
+                        />
+                      </div>
+                      <span className="text-sm font-bold w-12 text-right" style={{ color: getScoreColor(score) }}>
+                        {score.toFixed(0)}%
                       </span>
-                      {player.alias && <span className="text-sm text-gray-500 italic">"{player.alias}"</span>}
                     </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getGemschigradColor(player.gemschigrad)}`}>
-                    {player.gemschigrad}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-chnebel-black font-semibold">{player.klassierung}</td>
-              </tr>
-            ))}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3">
+        {sortedPlayers.map((player) => {
+          const stats = getPlayerStats(player.id);
+          const score = stats?.gemschiScore ?? 0;
+          return (
+            <div
+              key={player.id}
+              onClick={() => setSelectedPlayer(player)}
+              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 cursor-pointer active:scale-[0.98] transition-all"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-chnebel-gray flex items-center justify-center text-chnebel-black font-semibold text-sm overflow-hidden flex-shrink-0">
+                  {player.profilePictureUrl ? (
+                    <img src={player.profilePictureUrl} alt={player.name} className="w-full h-full object-cover" />
+                  ) : (
+                    player.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 font-medium text-chnebel-black">
+                    {player.name}
+                    {getRoleEmoji(player.role) && <span className="text-yellow-500">{getRoleEmoji(player.role)}</span>}
+                  </div>
+                  {player.alias && <div className="text-sm text-gray-500 italic truncate">"{player.alias}"</div>}
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${getGemschigradColor(player.gemschigrad)}`}>
+                  {player.gemschigrad}
+                </span>
+                <span className="text-sm font-semibold text-chnebel-black">{player.klassierung}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500">Gemschi Score</span>
+                <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{ width: `${score}%`, backgroundColor: getScoreColor(score) }}
+                  />
+                </div>
+                <span className="text-sm font-bold w-10 text-right" style={{ color: getScoreColor(score) }}>
+                  {score.toFixed(0)}%
+                </span>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Player Detail Modal */}
@@ -145,7 +210,9 @@ export const Spieler: React.FC = () => {
               {/* Seasonal Stats */}
               {selectedStats && (
                 <section>
-                  <h3 className="text-xl font-semibold text-chnebel-black mb-4">Saison-Statistiken</h3>
+                  <div className="bg-chnebel-red px-4 py-2 rounded-lg mb-4">
+                    <h3 className="text-sm font-bold text-white tracking-wide">Saison-Statistiken</h3>
+                  </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     {[
