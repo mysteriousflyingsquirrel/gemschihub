@@ -60,8 +60,6 @@ export const Admin: React.FC = () => {
   const [newPlayerRole, setNewPlayerRole] = useState<PlayerRole>('Spieler');
   const [newPlayerGrad, setNewPlayerGrad] = useState<Gemschigrad>('Gitzi');
   const [newPlayerKlass, setNewPlayerKlass] = useState<Klassierung>('R9');
-  const [newPlayerIntro, setNewPlayerIntro] = useState('');
-
   // --- Attendance modal ---
   const [attendanceEventId, setAttendanceEventId] = useState<string | null>(null);
   const [attendanceSelection, setAttendanceSelection] = useState<string[]>([]);
@@ -87,17 +85,23 @@ export const Admin: React.FC = () => {
     setNewSeasonName('');
   };
 
+  const isEventFormValid = () => {
+    if (!newEventTitle.trim() || !newEventDate || !newEventTime || !newEventLocation.trim() || !selectedSeasonId) return false;
+    if (newEventType === 'Interclub' && !newEventOpponent.trim()) return false;
+    return true;
+  };
+
   const handleAddEvent = () => {
-    if (!newEventTitle.trim() || !newEventDate || !selectedSeasonId) return;
+    if (!isEventFormValid()) return;
     const startDateTime = new Date(`${newEventDate}T${newEventTime}`).toISOString();
     const eventData: Omit<AppEvent, 'id'> = {
-      seasonId: selectedSeasonId,
+      seasonId: selectedSeasonId!,
       type: newEventType,
       title: newEventTitle.trim(),
       startDateTime,
-      location: newEventLocation.trim() || undefined,
+      location: newEventLocation.trim(),
     };
-    if (newEventType === 'Interclub' && newEventOpponent.trim()) {
+    if (newEventType === 'Interclub') {
       eventData.interclub = {
         opponent: newEventOpponent.trim(),
         matchStatus: 'Offen',
@@ -121,14 +125,12 @@ export const Admin: React.FC = () => {
       role: newPlayerRole,
       gemschigrad: newPlayerGrad,
       klassierung: newPlayerKlass,
-      introduction: newPlayerIntro.trim() || undefined,
     });
     setNewPlayerName('');
     setNewPlayerAlias('');
     setNewPlayerRole('Spieler');
     setNewPlayerGrad('Gitzi');
     setNewPlayerKlass('R9');
-    setNewPlayerIntro('');
   };
 
   const openAttendanceModal = (eventId: string) => {
@@ -210,11 +212,11 @@ export const Admin: React.FC = () => {
                 <input type="date" value={newEventDate} onChange={e => setNewEventDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Uhrzeit</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Uhrzeit *</label>
                 <input type="time" value={newEventTime} onChange={e => setNewEventTime(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Ort</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Ort *</label>
                 <input type="text" value={newEventLocation} onChange={e => setNewEventLocation(e.target.value)} placeholder="Ort" className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
               </div>
               {newEventType === 'Interclub' && (
@@ -224,7 +226,7 @@ export const Admin: React.FC = () => {
                 </div>
               )}
               <div className="md:col-span-2">
-                <button onClick={handleAddEvent} disabled={!newEventTitle.trim() || !newEventDate} className="w-full px-4 py-2 bg-chnebel-red text-white rounded font-semibold hover:bg-[#c4161e] disabled:opacity-50">+ Event hinzufügen</button>
+                <button onClick={handleAddEvent} disabled={!isEventFormValid()} className="w-full px-4 py-2 bg-chnebel-red text-white rounded font-semibold hover:bg-[#c4161e] disabled:opacity-50">+ Event hinzufügen</button>
               </div>
             </div>
           </div>
@@ -291,10 +293,6 @@ export const Admin: React.FC = () => {
                 <select value={newPlayerKlass} onChange={e => setNewPlayerKlass(e.target.value as Klassierung)} className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red">
                   {klassierungen.map(k => <option key={k} value={k}>{k}</option>)}
                 </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Vorstellung</label>
-                <input type="text" value={newPlayerIntro} onChange={e => setNewPlayerIntro(e.target.value)} placeholder="Kurztext (optional)" className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
               </div>
               <div className="md:col-span-2">
                 <button onClick={handleAddPlayer} disabled={!newPlayerName.trim()} className="w-full px-4 py-2 bg-chnebel-red text-white rounded font-semibold hover:bg-[#c4161e] disabled:opacity-50">+ Spieler hinzufügen</button>
