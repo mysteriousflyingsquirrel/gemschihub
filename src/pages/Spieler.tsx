@@ -90,6 +90,9 @@ export const Spieler: React.FC = () => {
                         <span className="flex items-center gap-2">
                           {player.name}
                           {getRoleEmoji(player.role) && <span className="text-yellow-500">{getRoleEmoji(player.role)}</span>}
+                          {player.role !== 'Spieler' && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-yellow-100 text-yellow-800">{player.role}</span>
+                          )}
                         </span>
                         {player.alias && <span className="text-sm text-gray-500 italic">"{player.alias}"</span>}
                       </div>
@@ -141,9 +144,12 @@ export const Spieler: React.FC = () => {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 font-medium text-chnebel-black">
+                  <div className="flex items-center gap-2 font-medium text-chnebel-black flex-wrap">
                     {player.name}
                     {getRoleEmoji(player.role) && <span className="text-yellow-500">{getRoleEmoji(player.role)}</span>}
+                    {player.role !== 'Spieler' && (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-yellow-100 text-yellow-800">{player.role}</span>
+                    )}
                   </div>
                   {player.alias && <div className="text-sm text-gray-500 italic truncate">"{player.alias}"</div>}
                 </div>
@@ -192,7 +198,10 @@ export const Spieler: React.FC = () => {
                       {getRoleEmoji(selectedPlayer.role) && <span className="text-yellow-300">{getRoleEmoji(selectedPlayer.role)}</span>}
                     </h2>
                     {selectedPlayer.alias && <p className="text-white/80 italic">"{selectedPlayer.alias}"</p>}
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                      {selectedPlayer.role !== 'Spieler' && (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-400 text-yellow-900">{selectedPlayer.role}</span>
+                      )}
                       <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-white/20">{selectedPlayer.gemschigrad}</span>
                       <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-white/20">{selectedPlayer.klassierung}</span>
                     </div>
