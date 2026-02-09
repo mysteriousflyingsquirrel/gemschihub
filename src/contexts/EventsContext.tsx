@@ -1,77 +1,37 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import {
+  collection,
+  doc,
+  onSnapshot,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+} from 'firebase/firestore';
+import { db } from '../firebase/firebaseConfig';
+import {
   AppEvent,
   createEmptySinglesGames,
   createEmptyDoublesGames,
   calculateTotalScore,
   deriveMatchStatus,
 } from '../types/event';
-import { storage } from '../storage/StorageService';
 import { useSeasons } from './SeasonsContext';
 
-const STORAGE_KEY = 'gemschihub_events';
+const COLLECTION = 'events';
 
 interface EventsContextType {
   /** All events across all seasons. */
   allEvents: AppEvent[];
   /** Events for the currently selected season only. */
   events: AppEvent[];
-  addEvent: (event: Omit<AppEvent, 'id'>) => AppEvent;
-  updateEvent: (id: string, updates: Partial<AppEvent>) => void;
-  removeEvent: (id: string) => void;
+  loading: boolean;
+  addEvent: (event: Omit<AppEvent, 'id'>) => Promise<AppEvent>;
+  updateEvent: (id: string, updates: Partial<AppEvent>) => Promise<void>;
+  removeEvent: (id: string) => Promise<void>;
   getEvent: (id: string) => AppEvent | undefined;
 }
 
 const EventsContext = createContext<EventsContextType | undefined>(undefined);
-
-const defaultEvents: AppEvent[] = [
-  {
-    id: 'evt-1',
-    seasonId: 'season-2024-2025',
-    type: 'Interclub',
-    title: 'Interclub vs. GC Zürich',
-    startDateTime: '2024-01-15T18:00:00.000Z',
-    location: 'Zürich',
-    interclub: {
-      opponent: 'GC Zürich',
-      matchStatus: 'Gespielt',
-      singlesGames: createEmptySinglesGames(),
-      doublesGames: createEmptyDoublesGames(),
-      totalScore: { ourScore: 5, opponentScore: 4 },
-    },
-  },
-  {
-    id: 'evt-2',
-    seasonId: 'season-2024-2025',
-    type: 'Interclub',
-    title: 'Interclub vs. BC Bern',
-    startDateTime: '2024-01-22T18:00:00.000Z',
-    location: 'Bern',
-    interclub: {
-      opponent: 'BC Bern',
-      matchStatus: 'Gespielt',
-      singlesGames: createEmptySinglesGames(),
-      doublesGames: createEmptyDoublesGames(),
-      totalScore: { ourScore: 2, opponentScore: 7 },
-    },
-  },
-  {
-    id: 'evt-3',
-    seasonId: 'season-2024-2025',
-    type: 'Training',
-    title: 'Training Montag',
-    startDateTime: '2024-01-08T18:00:00.000Z',
-    location: 'Halle A',
-  },
-  {
-    id: 'evt-4',
-    seasonId: 'season-2024-2025',
-    type: 'Spirit',
-    title: 'Bierversammlung',
-    startDateTime: '2024-01-20T19:00:00.000Z',
-    location: 'Vereinslokal',
-  },
-];
 
 export const useEvents = () => {
   const context = useContext(EventsContext);
@@ -83,14 +43,22 @@ export const useEvents = () => {
 
 export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { selectedSeasonId } = useSeasons();
+  const [allEvents, setAllEvents] = useState<AppEvent[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [allEvents, setAllEvents] = useState<AppEvent[]>(() => {
-    return storage.get<AppEvent[]>(STORAGE_KEY) || defaultEvents;
-  });
-
+  // Real-time listener
   useEffect(() => {
-    storage.set(STORAGE_KEY, allEvents);
-  }, [allEvents]);
+    const colRef = collection(db, COLLECTION);
+    const unsubscribe = onSnapshot(colRef, (snapshot) => {
+      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as AppEvent));
+      setAllEvents(data);
+      setLoading(false);
+    }, (error) => {
+      console.error('Firestore events listener error:', error);
+      setLoading(false);
+    });
+    return unsubscribe;
+  }, []);
 
   // Filter to selected season
   const events = useMemo(
@@ -98,14 +66,11 @@ export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     [allEvents, selectedSeasonId]
   );
 
-  const addEvent = useCallback((eventData: Omit<AppEvent, 'id'>): AppEvent => {
-    const newEvent: AppEvent = {
-      ...eventData,
-      id: `evt-${Date.now()}`,
-    };
+  const addEvent = useCallback(async (eventData: Omit<AppEvent, 'id'>): Promise<AppEvent> => {
+    const data = { ...eventData };
     // Initialize interclub data if type is Interclub and not provided
-    if (newEvent.type === 'Interclub' && !newEvent.interclub) {
-      newEvent.interclub = {
+    if (data.type === 'Interclub' && !data.interclub) {
+      data.interclub = {
         opponent: '',
         matchStatus: 'Offen',
         singlesGames: createEmptySinglesGames(),
@@ -113,32 +78,30 @@ export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         totalScore: { ourScore: 0, opponentScore: 0 },
       };
     }
-    setAllEvents(prev => [...prev, newEvent]);
-    return newEvent;
+    const docRef = await addDoc(collection(db, COLLECTION), data);
+    return { id: docRef.id, ...data } as AppEvent;
   }, []);
 
-  const updateEvent = useCallback((id: string, updates: Partial<AppEvent>) => {
-    setAllEvents(prev =>
-      prev.map(event => {
-        if (event.id !== id) return event;
-        const updated = { ...event, ...updates };
-        // Recalculate interclub totals if games were updated
-        if (updated.interclub && (updates.interclub?.singlesGames || updates.interclub?.doublesGames)) {
-          const singles = updated.interclub.singlesGames;
-          const doubles = updated.interclub.doublesGames;
-          updated.interclub = {
-            ...updated.interclub,
-            totalScore: calculateTotalScore(singles, doubles),
-            matchStatus: deriveMatchStatus(singles, doubles),
-          };
-        }
-        return updated;
-      })
-    );
-  }, []);
+  const updateEvent = useCallback(async (id: string, updates: Partial<AppEvent>) => {
+    // Recalculate interclub totals if games were updated
+    const current = allEvents.find(e => e.id === id);
+    if (current && updates.interclub) {
+      const merged = { ...current.interclub!, ...updates.interclub };
+      if (updates.interclub.singlesGames || updates.interclub.doublesGames) {
+        const singles = merged.singlesGames;
+        const doubles = merged.doublesGames;
+        merged.totalScore = calculateTotalScore(singles, doubles);
+        merged.matchStatus = deriveMatchStatus(singles, doubles);
+      }
+      updates = { ...updates, interclub: merged };
+    }
+    // Remove 'id' from updates to avoid writing it as a field
+    const { id: _id, ...cleanUpdates } = updates as AppEvent;
+    await updateDoc(doc(db, COLLECTION, id), cleanUpdates);
+  }, [allEvents]);
 
-  const removeEvent = useCallback((id: string) => {
-    setAllEvents(prev => prev.filter(e => e.id !== id));
+  const removeEvent = useCallback(async (id: string) => {
+    await deleteDoc(doc(db, COLLECTION, id));
   }, []);
 
   const getEvent = useCallback(
@@ -147,7 +110,7 @@ export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   );
 
   return (
-    <EventsContext.Provider value={{ allEvents, events, addEvent, updateEvent, removeEvent, getEvent }}>
+    <EventsContext.Provider value={{ allEvents, events, loading, addEvent, updateEvent, removeEvent, getEvent }}>
       {children}
     </EventsContext.Provider>
   );

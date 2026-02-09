@@ -1,15 +1,21 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import {
+  doc,
+  onSnapshot,
+  setDoc,
+} from 'firebase/firestore';
+import { db } from '../firebase/firebaseConfig';
 import { TenueData, TenueItem } from '../types/info';
 import { Gemschigrad } from '../types/player';
-import { storage } from '../storage/StorageService';
 
-const STORAGE_KEY = 'gemschihub_tenue';
+const DOC_PATH = 'settings/tenue';
 
 interface InfoContextType {
   tenueData: TenueData;
-  addTenueItem: (gemschigrad: Gemschigrad, text: string) => void;
-  updateTenueItem: (gemschigrad: Gemschigrad, id: string, text: string) => void;
-  removeTenueItem: (gemschigrad: Gemschigrad, id: string) => void;
+  loading: boolean;
+  addTenueItem: (gemschigrad: Gemschigrad, text: string) => Promise<void>;
+  updateTenueItem: (gemschigrad: Gemschigrad, id: string, text: string) => Promise<void>;
+  removeTenueItem: (gemschigrad: Gemschigrad, id: string) => Promise<void>;
 }
 
 const InfoContext = createContext<InfoContextType | undefined>(undefined);
@@ -50,46 +56,67 @@ export const useInfo = () => {
 };
 
 export const InfoProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [tenueData, setTenueData] = useState<TenueData>(() => {
-    return storage.get<TenueData>(STORAGE_KEY) || defaultTenueData;
-  });
+  const [tenueData, setTenueData] = useState<TenueData>(defaultTenueData);
+  const [loading, setLoading] = useState(true);
 
+  // Real-time listener on a single document
   useEffect(() => {
-    storage.set(STORAGE_KEY, tenueData);
-  }, [tenueData]);
-
-  const addTenueItem = (gemschigrad: Gemschigrad, text: string) => {
-    setTenueData(prev => {
-      const items = prev[gemschigrad];
-      const newItem: TenueItem = {
-        id: Date.now().toString(),
-        text,
-        order: items.length + 1,
-      };
-      return { ...prev, [gemschigrad]: [...items, newItem] };
+    const docRef = doc(db, ...DOC_PATH.split('/') as [string, string]);
+    const unsubscribe = onSnapshot(docRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setTenueData(snapshot.data() as TenueData);
+      }
+      // If doc doesn't exist yet, keep defaults
+      setLoading(false);
+    }, (error) => {
+      console.error('Firestore tenue listener error:', error);
+      setLoading(false);
     });
+    return unsubscribe;
+  }, []);
+
+  /** Persist the full tenue data to Firestore. */
+  const persist = async (data: TenueData) => {
+    const docRef = doc(db, ...DOC_PATH.split('/') as [string, string]);
+    await setDoc(docRef, data);
   };
 
-  const updateTenueItem = (gemschigrad: Gemschigrad, id: string, text: string) => {
-    setTenueData(prev => ({
-      ...prev,
-      [gemschigrad]: prev[gemschigrad].map(item =>
+  const addTenueItem = async (gemschigrad: Gemschigrad, text: string) => {
+    const items = tenueData[gemschigrad];
+    const newItem: TenueItem = {
+      id: Date.now().toString(),
+      text,
+      order: items.length + 1,
+    };
+    const updated = { ...tenueData, [gemschigrad]: [...items, newItem] };
+    setTenueData(updated);
+    await persist(updated);
+  };
+
+  const updateTenueItem = async (gemschigrad: Gemschigrad, id: string, text: string) => {
+    const updated = {
+      ...tenueData,
+      [gemschigrad]: tenueData[gemschigrad].map(item =>
         item.id === id ? { ...item, text } : item
       ),
-    }));
+    };
+    setTenueData(updated);
+    await persist(updated);
   };
 
-  const removeTenueItem = (gemschigrad: Gemschigrad, id: string) => {
-    setTenueData(prev => ({
-      ...prev,
-      [gemschigrad]: prev[gemschigrad]
+  const removeTenueItem = async (gemschigrad: Gemschigrad, id: string) => {
+    const updated = {
+      ...tenueData,
+      [gemschigrad]: tenueData[gemschigrad]
         .filter(item => item.id !== id)
         .map((item, index) => ({ ...item, order: index + 1 })),
-    }));
+    };
+    setTenueData(updated);
+    await persist(updated);
   };
 
   return (
-    <InfoContext.Provider value={{ tenueData, addTenueItem, updateTenueItem, removeTenueItem }}>
+    <InfoContext.Provider value={{ tenueData, loading, addTenueItem, updateTenueItem, removeTenueItem }}>
       {children}
     </InfoContext.Provider>
   );

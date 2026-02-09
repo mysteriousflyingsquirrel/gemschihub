@@ -1,23 +1,33 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import {
+  collection,
+  doc,
+  onSnapshot,
+  writeBatch,
+  getDocs,
+  query,
+  where,
+} from 'firebase/firestore';
+import { db } from '../firebase/firebaseConfig';
 import { AttendanceRecord } from '../types/attendance';
-import { storage } from '../storage/StorageService';
 import { useSeasons } from './SeasonsContext';
 
-const STORAGE_KEY = 'gemschihub_attendance';
+const COLLECTION = 'attendance';
 
 interface AttendanceContextType {
   /** All attendance across all seasons. */
   allAttendance: AttendanceRecord[];
   /** Attendance for the selected season only. */
   attendance: AttendanceRecord[];
+  loading: boolean;
   /** Get attendees for a specific event. */
   getEventAttendees: (eventId: string) => AttendanceRecord[];
   /** Get all events a player attended in the selected season. */
   getPlayerAttendance: (playerId: string) => AttendanceRecord[];
   /** Set attendance for an event (replaces previous). */
-  setEventAttendance: (eventId: string, seasonId: string, playerIds: string[]) => void;
+  setEventAttendance: (eventId: string, seasonId: string, playerIds: string[]) => Promise<void>;
   /** Remove all attendance for an event (e.g. when deleting event). */
-  removeEventAttendance: (eventId: string) => void;
+  removeEventAttendance: (eventId: string) => Promise<void>;
 }
 
 const AttendanceContext = createContext<AttendanceContextType | undefined>(undefined);
@@ -32,14 +42,22 @@ export const useAttendance = () => {
 
 export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { selectedSeasonId } = useSeasons();
+  const [allAttendance, setAllAttendance] = useState<AttendanceRecord[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [allAttendance, setAllAttendance] = useState<AttendanceRecord[]>(() => {
-    return storage.get<AttendanceRecord[]>(STORAGE_KEY) || [];
-  });
-
+  // Real-time listener
   useEffect(() => {
-    storage.set(STORAGE_KEY, allAttendance);
-  }, [allAttendance]);
+    const colRef = collection(db, COLLECTION);
+    const unsubscribe = onSnapshot(colRef, (snapshot) => {
+      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as AttendanceRecord));
+      setAllAttendance(data);
+      setLoading(false);
+    }, (error) => {
+      console.error('Firestore attendance listener error:', error);
+      setLoading(false);
+    });
+    return unsubscribe;
+  }, []);
 
   const attendance = useMemo(
     () => (selectedSeasonId ? allAttendance.filter(a => a.seasonId === selectedSeasonId) : []),
@@ -57,25 +75,31 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   );
 
   const setEventAttendance = useCallback(
-    (eventId: string, seasonId: string, playerIds: string[]) => {
-      setAllAttendance(prev => {
-        // Remove old attendance for this event
-        const without = prev.filter(a => a.eventId !== eventId);
-        // Add new
-        const newRecords: AttendanceRecord[] = playerIds.map(playerId => ({
-          id: `att-${eventId}-${playerId}`,
-          eventId,
-          seasonId,
-          playerId,
-        }));
-        return [...without, ...newRecords];
-      });
+    async (eventId: string, seasonId: string, playerIds: string[]) => {
+      // Delete old attendance for this event
+      const q = query(collection(db, COLLECTION), where('eventId', '==', eventId));
+      const existing = await getDocs(q);
+
+      const batch = writeBatch(db);
+      existing.docs.forEach(d => batch.delete(d.ref));
+
+      // Add new records
+      for (const playerId of playerIds) {
+        const newRef = doc(collection(db, COLLECTION));
+        batch.set(newRef, { eventId, seasonId, playerId });
+      }
+
+      await batch.commit();
     },
     []
   );
 
-  const removeEventAttendance = useCallback((eventId: string) => {
-    setAllAttendance(prev => prev.filter(a => a.eventId !== eventId));
+  const removeEventAttendance = useCallback(async (eventId: string) => {
+    const q = query(collection(db, COLLECTION), where('eventId', '==', eventId));
+    const existing = await getDocs(q);
+    const batch = writeBatch(db);
+    existing.docs.forEach(d => batch.delete(d.ref));
+    await batch.commit();
   }, []);
 
   return (
@@ -83,6 +107,7 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       value={{
         allAttendance,
         attendance,
+        loading,
         getEventAttendees,
         getPlayerAttendance,
         setEventAttendance,

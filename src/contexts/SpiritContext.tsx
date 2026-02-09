@@ -1,19 +1,26 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import {
+  collection,
+  doc,
+  onSnapshot,
+  setDoc,
+} from 'firebase/firestore';
+import { db } from '../firebase/firebaseConfig';
 import { SpiritValue } from '../types/spirit';
-import { storage } from '../storage/StorageService';
 import { useSeasons } from './SeasonsContext';
 
-const STORAGE_KEY = 'gemschihub_spirit';
+const COLLECTION = 'spirit';
 
 interface SpiritContextType {
   /** All spirit values across all seasons. */
   allSpirit: SpiritValue[];
   /** Spirit values for the selected season only. */
   spirit: SpiritValue[];
+  loading: boolean;
   /** Get spirit value for a specific player in the selected season. */
   getPlayerSpirit: (playerId: string) => number;
   /** Set spirit for a player in a given season. */
-  setPlayerSpirit: (playerId: string, seasonId: string, value: number) => void;
+  setPlayerSpirit: (playerId: string, seasonId: string, value: number) => Promise<void>;
 }
 
 const SpiritContext = createContext<SpiritContextType | undefined>(undefined);
@@ -28,14 +35,22 @@ export const useSpirit = () => {
 
 export const SpiritProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { selectedSeasonId } = useSeasons();
+  const [allSpirit, setAllSpirit] = useState<SpiritValue[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [allSpirit, setAllSpirit] = useState<SpiritValue[]>(() => {
-    return storage.get<SpiritValue[]>(STORAGE_KEY) || [];
-  });
-
+  // Real-time listener
   useEffect(() => {
-    storage.set(STORAGE_KEY, allSpirit);
-  }, [allSpirit]);
+    const colRef = collection(db, COLLECTION);
+    const unsubscribe = onSnapshot(colRef, (snapshot) => {
+      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as SpiritValue));
+      setAllSpirit(data);
+      setLoading(false);
+    }, (error) => {
+      console.error('Firestore spirit listener error:', error);
+      setLoading(false);
+    });
+    return unsubscribe;
+  }, []);
 
   const spirit = useMemo(
     () => (selectedSeasonId ? allSpirit.filter(s => s.seasonId === selectedSeasonId) : []),
@@ -51,32 +66,21 @@ export const SpiritProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   );
 
   const setPlayerSpirit = useCallback(
-    (playerId: string, seasonId: string, value: number) => {
-      setAllSpirit(prev => {
-        const existing = prev.find(s => s.playerId === playerId && s.seasonId === seasonId);
-        if (existing) {
-          return prev.map(s =>
-            s.playerId === playerId && s.seasonId === seasonId
-              ? { ...s, value: Math.max(0, Math.min(100, value)) }
-              : s
-          );
-        }
-        return [
-          ...prev,
-          {
-            id: `spirit-${playerId}-${seasonId}`,
-            playerId,
-            seasonId,
-            value: Math.max(0, Math.min(100, value)),
-          },
-        ];
+    async (playerId: string, seasonId: string, value: number) => {
+      const clampedValue = Math.max(0, Math.min(100, value));
+      // Use deterministic doc ID so upserts work naturally
+      const docId = `${playerId}_${seasonId}`;
+      await setDoc(doc(db, COLLECTION, docId), {
+        playerId,
+        seasonId,
+        value: clampedValue,
       });
     },
     []
   );
 
   return (
-    <SpiritContext.Provider value={{ allSpirit, spirit, getPlayerSpirit, setPlayerSpirit }}>
+    <SpiritContext.Provider value={{ allSpirit, spirit, loading, getPlayerSpirit, setPlayerSpirit }}>
       {children}
     </SpiritContext.Provider>
   );

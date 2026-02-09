@@ -1,59 +1,31 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import {
+  collection,
+  doc,
+  onSnapshot,
+  addDoc,
+  updateDoc,
+  writeBatch,
+} from 'firebase/firestore';
+import { db } from '../firebase/firebaseConfig';
 import { Player, PlayerRole } from '../types/player';
-import { storage } from '../storage/StorageService';
 
-const STORAGE_KEY = 'gemschihub_players';
+const COLLECTION = 'players';
 
 interface PlayersContextType {
   /** All players (including inactive). */
   allPlayers: Player[];
   /** Active players only. */
   players: Player[];
-  addPlayer: (player: Omit<Player, 'id' | 'isActive' | 'profilePictureUrl'>) => Player;
-  updatePlayer: (id: string, updates: Partial<Player>) => void;
+  loading: boolean;
+  addPlayer: (player: Omit<Player, 'id' | 'isActive' | 'profilePictureUrl'>) => Promise<Player>;
+  updatePlayer: (id: string, updates: Partial<Player>) => Promise<void>;
   /** Soft-delete: sets isActive=false but preserves historical data. */
-  removePlayer: (id: string) => void;
+  removePlayer: (id: string) => Promise<void>;
   getPlayer: (id: string) => Player | undefined;
 }
 
 const PlayersContext = createContext<PlayersContextType | undefined>(undefined);
-
-const defaultPlayers: Player[] = [
-  {
-    id: 'p-1', name: 'Max Müller', role: 'CEO of Patchio', gemschigrad: 'Ehrengemschi',
-    klassierung: 'R5', profilePictureUrl: null, introduction: 'Gründungsmitglied und Patch-Enthusiast.',
-    email: 'max@example.com', joinDate: '2020-01-15', isActive: true,
-  },
-  {
-    id: 'p-2', name: 'Anna Schmidt', alias: 'Schmidtli', role: 'Captain', gemschigrad: 'Kuttengemschi',
-    klassierung: 'R6', profilePictureUrl: null, introduction: 'Unsere furchtlose Captain.',
-    email: 'anna@example.com', joinDate: '2021-03-20', isActive: true,
-  },
-  {
-    id: 'p-3', name: 'Thomas Weber', role: 'Spieler', gemschigrad: 'Bandanagemschi',
-    klassierung: 'R7', profilePictureUrl: null, joinDate: '2019-06-10', isActive: true,
-  },
-  {
-    id: 'p-4', name: 'Sarah Fischer', role: 'Spieler', gemschigrad: 'Gitzi',
-    klassierung: 'R8', profilePictureUrl: null, joinDate: '2022-02-14', isActive: true,
-  },
-  {
-    id: 'p-5', name: 'Michael Schneider', role: 'Spieler', gemschigrad: 'Ehrengemschi',
-    klassierung: 'R5', profilePictureUrl: null, joinDate: '2018-09-05', isActive: true,
-  },
-  {
-    id: 'p-6', name: 'Lisa Wagner', role: 'Spieler', gemschigrad: 'Kuttengemschi',
-    klassierung: 'R6', profilePictureUrl: null, joinDate: '2021-11-18', isActive: true,
-  },
-  {
-    id: 'p-7', name: 'David Becker', role: 'Spieler', gemschigrad: 'Bandanagemschi',
-    klassierung: 'R7', profilePictureUrl: null, joinDate: '2020-07-22', isActive: true,
-  },
-  {
-    id: 'p-8', name: 'Julia Hoffmann', role: 'Spieler', gemschigrad: 'Gitzi',
-    klassierung: 'R9', profilePictureUrl: null, joinDate: '2023-01-08', isActive: true,
-  },
-];
 
 export const usePlayers = () => {
   const context = useContext(PlayersContext);
@@ -64,57 +36,67 @@ export const usePlayers = () => {
 };
 
 export const PlayersProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [allPlayers, setAllPlayers] = useState<Player[]>(() => {
-    return storage.get<Player[]>(STORAGE_KEY) || defaultPlayers;
-  });
+  const [allPlayers, setAllPlayers] = useState<Player[]>([]);
+  const [loading, setLoading] = useState(true);
 
+  // Real-time listener
   useEffect(() => {
-    storage.set(STORAGE_KEY, allPlayers);
-  }, [allPlayers]);
+    const colRef = collection(db, COLLECTION);
+    const unsubscribe = onSnapshot(colRef, (snapshot) => {
+      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Player));
+      setAllPlayers(data);
+      setLoading(false);
+    }, (error) => {
+      console.error('Firestore players listener error:', error);
+      setLoading(false);
+    });
+    return unsubscribe;
+  }, []);
 
   const players = useMemo(() => allPlayers.filter(p => p.isActive), [allPlayers]);
 
-  const addPlayer = useCallback((playerData: Omit<Player, 'id' | 'isActive' | 'profilePictureUrl'>): Player => {
-    const newPlayer: Player = {
+  const addPlayer = useCallback(async (
+    playerData: Omit<Player, 'id' | 'isActive' | 'profilePictureUrl'>
+  ): Promise<Player> => {
+    // Enforce single Captain/CEO: demote existing if needed
+    if (playerData.role === 'Captain' || playerData.role === 'CEO of Patchio') {
+      const batch = writeBatch(db);
+      for (const p of allPlayers) {
+        if (p.role === playerData.role) {
+          batch.update(doc(db, COLLECTION, p.id), { role: 'Spieler' as PlayerRole });
+        }
+      }
+      await batch.commit();
+    }
+
+    const data = {
       ...playerData,
-      id: `p-${Date.now()}`,
       isActive: true,
       profilePictureUrl: null,
     };
+    const docRef = await addDoc(collection(db, COLLECTION), data);
+    return { id: docRef.id, ...data } as Player;
+  }, [allPlayers]);
 
-    setAllPlayers(prev => {
-      let updated = prev;
-      // Enforce single Captain
-      if (newPlayer.role === 'Captain' || newPlayer.role === 'CEO of Patchio') {
-        updated = prev.map(p =>
-          p.role === newPlayer.role ? { ...p, role: 'Spieler' as PlayerRole } : p
-        );
+  const updatePlayer = useCallback(async (id: string, updates: Partial<Player>) => {
+    // Enforce single Captain/CEO
+    if (updates.role && (updates.role === 'Captain' || updates.role === 'CEO of Patchio')) {
+      const batch = writeBatch(db);
+      for (const p of allPlayers) {
+        if (p.id !== id && p.role === updates.role) {
+          batch.update(doc(db, COLLECTION, p.id), { role: 'Spieler' as PlayerRole });
+        }
       }
-      return [...updated, newPlayer];
-    });
-    return newPlayer;
-  }, []);
+      batch.update(doc(db, COLLECTION, id), updates);
+      await batch.commit();
+    } else {
+      await updateDoc(doc(db, COLLECTION, id), updates);
+    }
+  }, [allPlayers]);
 
-  const updatePlayer = useCallback((id: string, updates: Partial<Player>) => {
-    setAllPlayers(prev => {
-      let result = prev;
-      // Enforce single Captain/CEO
-      if (updates.role && (updates.role === 'Captain' || updates.role === 'CEO of Patchio')) {
-        result = prev.map(p => {
-          if (p.id === id) return { ...p, ...updates };
-          if (p.role === updates.role) return { ...p, role: 'Spieler' as PlayerRole };
-          return p;
-        });
-      } else {
-        result = prev.map(p => (p.id === id ? { ...p, ...updates } : p));
-      }
-      return result;
-    });
-  }, []);
-
-  const removePlayer = useCallback((id: string) => {
+  const removePlayer = useCallback(async (id: string) => {
     // Soft-delete: preserve for historical data
-    setAllPlayers(prev => prev.map(p => (p.id === id ? { ...p, isActive: false } : p)));
+    await updateDoc(doc(db, COLLECTION, id), { isActive: false });
   }, []);
 
   const getPlayer = useCallback(
@@ -123,7 +105,7 @@ export const PlayersProvider: React.FC<{ children: React.ReactNode }> = ({ child
   );
 
   return (
-    <PlayersContext.Provider value={{ allPlayers, players, addPlayer, updatePlayer, removePlayer, getPlayer }}>
+    <PlayersContext.Provider value={{ allPlayers, players, loading, addPlayer, updatePlayer, removePlayer, getPlayer }}>
       {children}
     </PlayersContext.Provider>
   );
