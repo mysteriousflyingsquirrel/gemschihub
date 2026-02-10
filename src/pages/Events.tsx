@@ -23,10 +23,17 @@ const getEventTypeIcon = (type: string) => {
 const getStatusBadge = (status: string) => {
   switch (status) {
     case 'Upcoming': return { text: 'Bevorstehend', color: 'bg-blue-100 text-blue-800' };
-    case 'Ongoing': return { text: 'Laufend', color: 'bg-yellow-100 text-yellow-800' };
+    case 'Ongoing': return { text: '● Live', color: 'bg-green-100 text-green-700 font-bold' };
     case 'Completed': return { text: 'Abgeschlossen', color: 'bg-gray-100 text-gray-600' };
     default: return { text: status, color: 'bg-gray-100 text-gray-600' };
   }
+};
+
+/** Check if an event is happening today (start date <= today <= end date) */
+const isEventToday = (event: AppEvent): boolean => {
+  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  const endDate = event.endDate || event.startDate;
+  return event.startDate <= today && today <= endDate;
 };
 
 const getMatchStatusBadge = (status: string) => {
@@ -100,14 +107,17 @@ export const Events: React.FC = () => {
               const status = deriveEventStatus(event);
               const statusBadge = getStatusBadge(status);
               const isNext = event.id === nextEventId;
+              const liveToday = isEventToday(event);
               return (
                 <tr
                   key={event.id}
                   onClick={() => setSelectedEvent(event)}
                   className={`border-b border-gray-200 transition-colors cursor-pointer ${
-                    isNext
-                      ? 'bg-chnebel-red/10 border-l-4 border-l-chnebel-red hover:bg-chnebel-red/20 font-semibold'
-                      : 'hover:bg-chnebel-gray/50'
+                    liveToday
+                      ? 'bg-green-50 border-l-4 border-l-green-500 hover:bg-green-100 font-semibold'
+                      : isNext
+                        ? 'bg-chnebel-red/10 border-l-4 border-l-chnebel-red hover:bg-chnebel-red/20 font-semibold'
+                        : 'hover:bg-chnebel-gray/50'
                   }`}
                 >
                   <td className="px-6 py-4 text-chnebel-black">{formatEventDateDisplay(event)}</td>
@@ -164,12 +174,17 @@ export const Events: React.FC = () => {
           const status = deriveEventStatus(event);
           const statusBadge = getStatusBadge(status);
           const isNext = event.id === nextEventId;
+          const liveToday = isEventToday(event);
           return (
             <div
               key={event.id}
               onClick={() => setSelectedEvent(event)}
               className={`bg-white rounded-lg shadow-sm border-2 p-4 cursor-pointer active:scale-[0.98] transition-all ${
-                isNext ? 'border-chnebel-red bg-chnebel-red/5' : 'border-gray-200'
+                liveToday
+                  ? 'event-live bg-green-50/50'
+                  : isNext
+                    ? 'border-chnebel-red bg-chnebel-red/5'
+                    : 'border-gray-200'
               }`}
             >
               {/* Row 1: Icon + Name */}
