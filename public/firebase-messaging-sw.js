@@ -25,8 +25,8 @@ messaging.onBackgroundMessage((payload) => {
   const notificationTitle = payload.notification?.title || 'GemschiHub';
   const notificationOptions = {
     body: payload.notification?.body || '',
-    icon: '/favicon.svg',
-    badge: '/favicon.svg',
+    icon: '/icon-192.png',
+    badge: '/favicon-32.png',
     data: payload.data || {},
   };
 

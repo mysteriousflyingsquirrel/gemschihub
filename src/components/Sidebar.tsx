@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { SeasonSelector } from './SeasonSelector';
+import { NotificationBell } from './NotificationBell';
 import logo from '../assets/chnebel-logo-transparent.png';
 
 interface SidebarProps {
@@ -81,6 +82,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileMenuOpen, onMobileMenu
             className="w-32 h-32 object-contain relative z-10"
           />
           <div className="sidebar-fire-fade" />
+        </div>
+
+        {/* Notification opt-in */}
+        <div className="px-3 pt-2 pb-1">
+          <NotificationBell />
         </div>
 
         {/* Season Selector */}

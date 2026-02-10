@@ -1,15 +1,12 @@
 /**
  * GemschiHub — Firebase Cloud Functions
  *
- * Functions for sending push notifications:
- * 1. sendEventReminder — Callable: sends upcoming event reminders
- * 2. sendLiveUpdate — Callable: sends Interclub live score updates
- * 3. scheduledReminder — Scheduled: runs periodically to check for upcoming events
+ * 1. registerPushToken — Stores an FCM token in Firestore
+ * 2. sendNotification  — Sends a custom notification to all subscribers (Captain only)
  */
 
 import * as admin from 'firebase-admin';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { onSchedule } from 'firebase-functions/v2/scheduler';
 
 admin.initializeApp();
 
@@ -40,8 +37,8 @@ async function sendToAll(title: string, body: string, data?: Record<string, stri
     tokens,
     webpush: {
       notification: {
-        icon: '/favicon.svg',
-        badge: '/favicon.svg',
+        icon: '/icon-192.png',
+        badge: '/favicon-32.png',
       },
     },
   };
@@ -58,7 +55,7 @@ async function sendToAll(title: string, body: string, data?: Record<string, stri
   if (invalidTokens.length > 0) {
     const batch = db.batch();
     const tokenDocs = await db.collection('push_tokens')
-      .where('token', 'in', invalidTokens.slice(0, 10)) // Firestore "in" max 10
+      .where('token', 'in', invalidTokens.slice(0, 10))
       .get();
     tokenDocs.docs.forEach(doc => batch.delete(doc.ref));
     await batch.commit();
@@ -70,94 +67,7 @@ async function sendToAll(title: string, body: string, data?: Record<string, stri
 }
 
 /**
- * Callable: Send an event reminder notification.
- * Called by Captain from admin panel.
- */
-export const sendEventReminder = onCall(async (request) => {
-  // Verify the caller is authenticated
-  if (!request.auth) {
-    throw new HttpsError('unauthenticated', 'Authentication required.');
-  }
-
-  const { title, body, eventId } = request.data as { title: string; body: string; eventId?: string };
-  if (!title || !body) {
-    throw new HttpsError('invalid-argument', 'Title and body are required.');
-  }
-
-  return sendToAll(title, body, { type: 'event_reminder', eventId: eventId || '' });
-});
-
-/**
- * Callable: Send a live Interclub score update.
- * Called by Captain when scores change during a match.
- */
-export const sendLiveUpdate = onCall(async (request) => {
-  if (!request.auth) {
-    throw new HttpsError('unauthenticated', 'Authentication required.');
-  }
-
-  const { title, body, eventId, ourScore, opponentScore } = request.data as {
-    title: string;
-    body: string;
-    eventId: string;
-    ourScore: string;
-    opponentScore: string;
-  };
-
-  if (!title || !body) {
-    throw new HttpsError('invalid-argument', 'Title and body are required.');
-  }
-
-  return sendToAll(title, body, {
-    type: 'live_update',
-    eventId: eventId || '',
-    ourScore: ourScore || '0',
-    opponentScore: opponentScore || '0',
-  });
-});
-
-/**
- * Scheduled: Check for upcoming events and send reminders.
- * Runs every hour.
- */
-export const scheduledReminder = onSchedule('every 1 hours', async () => {
-  // Get events starting today that haven't been reminded yet
-  const now = new Date();
-  const todayStr = now.toISOString().slice(0, 10); // "YYYY-MM-DD"
-  const twoHoursLater = new Date(now.getTime() + 2 * 60 * 60 * 1000);
-
-  const eventsSnapshot = await db.collection('events')
-    .where('startDate', '==', todayStr)
-    .get();
-
-  for (const doc of eventsSnapshot.docs) {
-    const event = doc.data();
-    // Check if reminder was already sent
-    const reminderSent = event.reminderSent || false;
-    if (reminderSent) continue;
-
-    // For timed events, only remind if within 2 hours; for all-day, remind once
-    if (event.startTime) {
-      const eventStart = new Date(`${event.startDate}T${event.startTime}:00`);
-      if (eventStart < now || eventStart > twoHoursLater) continue;
-    }
-
-    const title = `${event.type}: ${event.title}`;
-    const timeInfo = event.allDay ? 'Ganztägig' : `Beginnt um ${event.startTime || ''}`;
-    const body = `${timeInfo} · ${event.location || ''}`;
-
-    await sendToAll(title, body, { type: 'event_start', eventId: doc.id });
-
-    // Mark reminder as sent
-    await doc.ref.update({ reminderSent: true });
-  }
-
-  console.log(`Checked ${eventsSnapshot.size} upcoming events.`);
-});
-
-/**
- * Store a push token (callable).
- * Called from the client after obtaining FCM permission.
+ * Store a push token (callable from client).
  */
 export const registerPushToken = onCall(async (request) => {
   const { token } = request.data as { token: string };
@@ -165,7 +75,7 @@ export const registerPushToken = onCall(async (request) => {
     throw new HttpsError('invalid-argument', 'Token is required.');
   }
 
-  // Upsert token
+  // Upsert token — avoid duplicates
   const existing = await db.collection('push_tokens').where('token', '==', token).get();
   if (existing.empty) {
     await db.collection('push_tokens').add({
@@ -176,4 +86,20 @@ export const registerPushToken = onCall(async (request) => {
   }
 
   return { success: true };
+});
+
+/**
+ * Send a custom notification to all subscribers (Captain only).
+ */
+export const sendNotification = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Authentication required.');
+  }
+
+  const { title, body } = request.data as { title: string; body: string };
+  if (!title || !body) {
+    throw new HttpsError('invalid-argument', 'Title and body are required.');
+  }
+
+  return sendToAll(title, body, { type: 'custom' });
 });

@@ -11,6 +11,7 @@ import { useInfo } from '../contexts/InfoContext';
 import { useAuth } from '../contexts/AuthContext';
 import { AppEvent, EventType, SinglesGame, DoublesGame, createEmptySinglesGames, createEmptyDoublesGames, formatEventDateDisplay, getEventStartDate } from '../types/event';
 import { Player, Gemschigrad, Klassierung, PlayerRole } from '../types/player';
+import { sendNotificationToAll } from '../services/notifications';
 
 const gemschigrads: Gemschigrad[] = ['Ehrengemschi', 'Kuttengemschi', 'Bandanagemschi', 'Gitzi'];
 const klassierungen: Klassierung[] = ['N1', 'N2', 'N3', 'N4', 'R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9'];
@@ -176,6 +177,13 @@ export const Admin: React.FC = () => {
   // --- Tenue editing ---
   const [editingTenue, setEditingTenue] = useState<{ grad: Gemschigrad; id: string } | null>(null);
   const [newTenueText, setNewTenueText] = useState<Record<string, string>>({});
+
+  // --- Notifications ---
+  const [notifTitle, setNotifTitle] = useState('');
+  const [notifBody, setNotifBody] = useState('');
+  const [notifSending, setNotifSending] = useState(false);
+  const [notifResult, setNotifResult] = useState<{ success: number; failure: number } | null>(null);
+  const [notifError, setNotifError] = useState<string | null>(null);
 
   if (!isAdmin) {
     return <div className="p-8 text-center text-gray-500">Kein Zugriff. Bitte als Captain anmelden.</div>;
@@ -593,6 +601,67 @@ export const Admin: React.FC = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </CollapsibleSection>
+
+        {/* === NOTIFICATIONS === */}
+        <CollapsibleSection title="Benachrichtigungen" icon="🔔">
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Sende eine Push-Benachrichtigung an alle Mitglieder, die Benachrichtigungen aktiviert haben.
+            </p>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Titel</label>
+              <input
+                type="text"
+                value={notifTitle}
+                onChange={e => setNotifTitle(e.target.value)}
+                placeholder="z.B. Erinnerung Interclub"
+                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nachricht</label>
+              <textarea
+                value={notifBody}
+                onChange={e => setNotifBody(e.target.value)}
+                placeholder="z.B. Morgen um 18:00 Interclub vs. BC Bern — seid dabei!"
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red resize-none"
+              />
+            </div>
+            <button
+              onClick={async () => {
+                if (!notifTitle.trim() || !notifBody.trim()) return;
+                setNotifSending(true);
+                setNotifResult(null);
+                setNotifError(null);
+                try {
+                  const result = await sendNotificationToAll(notifTitle.trim(), notifBody.trim());
+                  setNotifResult(result);
+                  setNotifTitle('');
+                  setNotifBody('');
+                } catch (err: any) {
+                  setNotifError(err?.message || 'Fehler beim Senden');
+                } finally {
+                  setNotifSending(false);
+                }
+              }}
+              disabled={notifSending || !notifTitle.trim() || !notifBody.trim()}
+              className="w-full px-4 py-2 bg-chnebel-red text-white rounded font-semibold hover:bg-[#c4161e] disabled:opacity-50 transition-colors"
+            >
+              {notifSending ? 'Sende...' : '📤 Benachrichtigung senden'}
+            </button>
+            {notifResult && (
+              <div className="p-3 rounded-lg bg-green-50 border border-green-200 text-sm text-green-800">
+                Gesendet! {notifResult.success} erfolgreich{notifResult.failure > 0 ? `, ${notifResult.failure} fehlgeschlagen` : ''}.
+              </div>
+            )}
+            {notifError && (
+              <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-800">
+                Fehler: {notifError}
+              </div>
+            )}
           </div>
         </CollapsibleSection>
       </div>

@@ -1,29 +1,17 @@
 import { getToken } from 'firebase/messaging';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getMessagingInstance } from '../firebase/firebaseConfig';
+import { app } from '../firebase/firebaseConfig';
 import { storage } from '../storage/StorageService';
 
-const TOKENS_STORAGE_KEY = 'gemschihub_push_tokens';
+const PERMISSION_KEY = 'gemschihub_push_permission';
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY || '';
-
-export interface StoredPushToken {
-  token: string;
-  createdAt: string;
-}
 
 /**
  * Check if notifications are supported in the current browser.
  */
 export function isNotificationSupported(): boolean {
   return 'Notification' in window && 'serviceWorker' in navigator;
-}
-
-/**
- * Check if the user is on iOS running inside a PWA.
- */
-export function isIOSPWA(): boolean {
-  const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
-  const isStandalone = 'standalone' in window.navigator && (window.navigator as any).standalone;
-  return isIOS && isStandalone;
 }
 
 /**
@@ -35,12 +23,19 @@ export function getNotificationPermission(): NotificationPermission | 'unsupport
 }
 
 /**
- * Request notification permission and get FCM token.
- * Returns the token if permission is granted, null otherwise.
+ * Check if the user has already completed the notification opt-in flow.
  */
-export async function requestNotificationPermission(): Promise<string | null> {
+export function hasOptedIn(): boolean {
+  return storage.get<boolean>(PERMISSION_KEY) === true;
+}
+
+/**
+ * Request notification permission, get FCM token, and register it server-side.
+ * Returns the token if successful, null otherwise.
+ */
+export async function requestAndRegisterNotifications(): Promise<string | null> {
   if (!isNotificationSupported()) {
-    console.warn('Notifications not supported.');
+    console.warn('Notifications not supported in this browser.');
     return null;
   }
 
@@ -57,7 +52,7 @@ export async function requestNotificationPermission(): Promise<string | null> {
       return null;
     }
 
-    // Register service worker if not already registered
+    // Register service worker
     const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
 
     const token = await getToken(messaging, {
@@ -66,24 +61,34 @@ export async function requestNotificationPermission(): Promise<string | null> {
     });
 
     if (token) {
-      // Store token locally
-      const existing = storage.get<StoredPushToken[]>(TOKENS_STORAGE_KEY) || [];
-      if (!existing.find(t => t.token === token)) {
-        existing.push({ token, createdAt: new Date().toISOString() });
-        storage.set(TOKENS_STORAGE_KEY, existing);
-      }
+      // Register token server-side via Cloud Function
+      const functions = getFunctions(app, 'us-central1');
+      const registerPushToken = httpsCallable(functions, 'registerPushToken');
+      await registerPushToken({ token });
+
+      // Mark as opted in locally
+      storage.set(PERMISSION_KEY, true);
+      console.log('Push token registered successfully.');
     }
 
     return token;
   } catch (error) {
-    console.error('Failed to get notification token:', error);
+    console.error('Failed to set up notifications:', error);
     return null;
   }
 }
 
 /**
- * Get all stored push tokens for this device.
+ * Send a custom notification to all subscribed devices.
+ * Requires authentication (Captain only).
  */
-export function getStoredTokens(): StoredPushToken[] {
-  return storage.get<StoredPushToken[]>(TOKENS_STORAGE_KEY) || [];
+export async function sendNotificationToAll(title: string, body: string): Promise<{ success: number; failure: number }> {
+  const functions = getFunctions(app, 'us-central1');
+  const sendNotification = httpsCallable<
+    { title: string; body: string },
+    { success: number; failure: number }
+  >(functions, 'sendNotification');
+
+  const result = await sendNotification({ title, body });
+  return result.data;
 }
