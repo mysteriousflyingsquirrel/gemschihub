@@ -121,13 +121,13 @@ export const sendLiveUpdate = onCall(async (request) => {
  * Runs every hour.
  */
 export const scheduledReminder = onSchedule('every 1 hours', async () => {
-  // Get events starting in the next 2 hours
+  // Get events starting today that haven't been reminded yet
   const now = new Date();
+  const todayStr = now.toISOString().slice(0, 10); // "YYYY-MM-DD"
   const twoHoursLater = new Date(now.getTime() + 2 * 60 * 60 * 1000);
 
   const eventsSnapshot = await db.collection('events')
-    .where('startDateTime', '>=', now.toISOString())
-    .where('startDateTime', '<=', twoHoursLater.toISOString())
+    .where('startDate', '==', todayStr)
     .get();
 
   for (const doc of eventsSnapshot.docs) {
@@ -136,8 +136,15 @@ export const scheduledReminder = onSchedule('every 1 hours', async () => {
     const reminderSent = event.reminderSent || false;
     if (reminderSent) continue;
 
+    // For timed events, only remind if within 2 hours; for all-day, remind once
+    if (event.startTime) {
+      const eventStart = new Date(`${event.startDate}T${event.startTime}:00`);
+      if (eventStart < now || eventStart > twoHoursLater) continue;
+    }
+
     const title = `${event.type}: ${event.title}`;
-    const body = `Beginnt um ${new Date(event.startDateTime).toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })} · ${event.location || ''}`;
+    const timeInfo = event.allDay ? 'Ganztägig' : `Beginnt um ${event.startTime || ''}`;
+    const body = `${timeInfo} · ${event.location || ''}`;
 
     await sendToAll(title, body, { type: 'event_start', eventId: doc.id });
 

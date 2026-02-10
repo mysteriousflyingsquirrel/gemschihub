@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import { PageTitle } from '../components/PageTitle';
 import { useSeasons } from '../contexts/SeasonsContext';
 import { useEvents } from '../contexts/EventsContext';
@@ -7,13 +9,92 @@ import { useAttendance } from '../contexts/AttendanceContext';
 import { useSpirit } from '../contexts/SpiritContext';
 import { useInfo } from '../contexts/InfoContext';
 import { useAuth } from '../contexts/AuthContext';
-import { AppEvent, EventType, SinglesGame, DoublesGame, createEmptySinglesGames, createEmptyDoublesGames } from '../types/event';
+import { AppEvent, EventType, SinglesGame, DoublesGame, createEmptySinglesGames, createEmptyDoublesGames, formatEventDateDisplay, getEventStartDate } from '../types/event';
 import { Player, Gemschigrad, Klassierung, PlayerRole } from '../types/player';
 
 const gemschigrads: Gemschigrad[] = ['Ehrengemschi', 'Kuttengemschi', 'Bandanagemschi', 'Gitzi'];
 const klassierungen: Klassierung[] = ['N1', 'N2', 'N3', 'N4', 'R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9'];
 const playerRoles: PlayerRole[] = ['Spieler', 'Captain', 'CEO of Patchio'];
 const eventTypes: EventType[] = ['Training', 'Interclub', 'Spirit'];
+
+/**
+ * Date input component that displays dd.mm.yyyy format with a Monday-first calendar picker.
+ */
+const DateInput: React.FC<{
+  value: string; // internal YYYY-MM-DD
+  onChange: (internal: string) => void;
+  className?: string;
+}> = ({ value, onChange, className }) => {
+  // Convert internal YYYY-MM-DD to Date object for the picker
+  const selectedDate = value ? new Date(`${value}T00:00:00`) : null;
+
+  const handleChange = (date: Date | null) => {
+    if (date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      onChange(`${y}-${m}-${d}`);
+    } else {
+      onChange('');
+    }
+  };
+
+  return (
+    <DatePicker
+      selected={selectedDate}
+      onChange={handleChange}
+      dateFormat="dd.MM.yyyy"
+      placeholderText="dd.mm.yyyy"
+      calendarStartDay={1}
+      className={className}
+      wrapperClassName="w-full"
+      isClearable
+    />
+  );
+};
+
+/**
+ * Time input component that displays 24h format (HH:mm) with a time picker dropdown.
+ */
+const TimeInput: React.FC<{
+  value: string; // "HH:MM"
+  onChange: (time: string) => void;
+  disabled?: boolean;
+  className?: string;
+}> = ({ value, onChange, disabled, className }) => {
+  // Convert "HH:MM" to a Date object for the picker
+  const selectedTime = value ? (() => {
+    const [h, m] = value.split(':').map(Number);
+    const d = new Date();
+    d.setHours(h, m, 0, 0);
+    return d;
+  })() : null;
+
+  const handleChange = (date: Date | null) => {
+    if (date) {
+      const hh = String(date.getHours()).padStart(2, '0');
+      const mm = String(date.getMinutes()).padStart(2, '0');
+      onChange(`${hh}:${mm}`);
+    }
+  };
+
+  return (
+    <DatePicker
+      selected={selectedTime}
+      onChange={handleChange}
+      showTimeSelect
+      showTimeSelectOnly
+      timeIntervals={15}
+      timeCaption="Uhrzeit"
+      dateFormat="HH:mm"
+      timeFormat="HH:mm"
+      placeholderText="HH:mm"
+      className={className}
+      wrapperClassName="w-full"
+      disabled={disabled}
+    />
+  );
+};
 
 const CollapsibleSection: React.FC<{ title: string; icon: string; children: React.ReactNode }> = ({ title, icon, children }) => {
   const [open, setOpen] = useState(false);
@@ -52,9 +133,22 @@ export const Admin: React.FC = () => {
   const [newEventType, setNewEventType] = useState<EventType>('Training');
   const [newEventTitle, setNewEventTitle] = useState('');
   const [newEventDate, setNewEventDate] = useState('');
+  const [newEventEndDate, setNewEventEndDate] = useState('');
+  const [newEventAllDay, setNewEventAllDay] = useState(false);
   const [newEventTime, setNewEventTime] = useState('18:00');
   const [newEventLocation, setNewEventLocation] = useState('');
   const [newEventOpponent, setNewEventOpponent] = useState('');
+
+  // --- Edit event modal ---
+  const [editingEvent, setEditingEvent] = useState<AppEvent | null>(null);
+  const [editEventType, setEditEventType] = useState<EventType>('Training');
+  const [editEventTitle, setEditEventTitle] = useState('');
+  const [editEventDate, setEditEventDate] = useState('');
+  const [editEventEndDate, setEditEventEndDate] = useState('');
+  const [editEventAllDay, setEditEventAllDay] = useState(false);
+  const [editEventTime, setEditEventTime] = useState('18:00');
+  const [editEventLocation, setEditEventLocation] = useState('');
+  const [editEventOpponent, setEditEventOpponent] = useState('');
 
   // --- Player form ---
   const [newPlayerName, setNewPlayerName] = useState('');
@@ -95,21 +189,28 @@ export const Admin: React.FC = () => {
   };
 
   const isEventFormValid = () => {
-    if (!newEventTitle.trim() || !newEventDate || !newEventTime || !newEventLocation.trim() || !selectedSeasonId) return false;
+    if (!newEventTitle.trim() || !newEventDate || !newEventLocation.trim() || !selectedSeasonId) return false;
+    if (!newEventAllDay && !newEventTime) return false;
     if (newEventType === 'Interclub' && !newEventOpponent.trim()) return false;
     return true;
   };
 
   const handleAddEvent = () => {
     if (!isEventFormValid()) return;
-    const startDateTime = new Date(`${newEventDate}T${newEventTime}`).toISOString();
     const eventData: Omit<AppEvent, 'id'> = {
       seasonId: selectedSeasonId!,
       type: newEventType,
       title: newEventTitle.trim(),
-      startDateTime,
+      startDate: newEventDate,
+      allDay: newEventAllDay,
       location: newEventLocation.trim(),
     };
+    if (!newEventAllDay) {
+      eventData.startTime = newEventTime;
+    }
+    if (newEventEndDate) {
+      eventData.endDate = newEventEndDate;
+    }
     if (newEventType === 'Interclub') {
       eventData.interclub = {
         opponent: newEventOpponent.trim(),
@@ -122,8 +223,69 @@ export const Admin: React.FC = () => {
     addEvent(eventData);
     setNewEventTitle('');
     setNewEventDate('');
+    setNewEventEndDate('');
     setNewEventLocation('');
     setNewEventOpponent('');
+  };
+
+  const openEditEventModal = (event: AppEvent) => {
+    setEditingEvent(event);
+    setEditEventType(event.type);
+    setEditEventTitle(event.title);
+    setEditEventDate(event.startDate);
+    setEditEventEndDate(event.endDate || '');
+    setEditEventAllDay(event.allDay);
+    setEditEventTime(event.startTime || '18:00');
+    setEditEventLocation(event.location || '');
+    setEditEventOpponent(event.interclub?.opponent || '');
+  };
+
+  const isEditEventFormValid = () => {
+    if (!editEventTitle.trim() || !editEventDate || !editEventLocation.trim()) return false;
+    if (!editEventAllDay && !editEventTime) return false;
+    if (editEventType === 'Interclub' && !editEventOpponent.trim()) return false;
+    return true;
+  };
+
+  const handleSaveEvent = async () => {
+    if (!editingEvent || !isEditEventFormValid()) return;
+    const updates: Partial<AppEvent> = {
+      type: editEventType,
+      title: editEventTitle.trim(),
+      startDate: editEventDate,
+      allDay: editEventAllDay,
+      startTime: editEventAllDay ? undefined : editEventTime,
+      endDate: editEventEndDate || undefined,
+      location: editEventLocation.trim(),
+    };
+
+    const wasInterclub = editingEvent.type === 'Interclub';
+    const isNowInterclub = editEventType === 'Interclub';
+
+    if (isNowInterclub) {
+      // Preserve existing interclub data if it was already Interclub, just update opponent
+      if (wasInterclub && editingEvent.interclub) {
+        updates.interclub = {
+          ...editingEvent.interclub,
+          opponent: editEventOpponent.trim(),
+        };
+      } else {
+        // Switching to Interclub: initialise fresh interclub data
+        updates.interclub = {
+          opponent: editEventOpponent.trim(),
+          matchStatus: 'Offen',
+          singlesGames: createEmptySinglesGames(),
+          doublesGames: createEmptyDoublesGames(),
+          totalScore: { ourScore: 0, opponentScore: 0 },
+        };
+      }
+    } else if (wasInterclub) {
+      // Switching away from Interclub: clear interclub data
+      updates.interclub = undefined;
+    }
+
+    await updateEvent(editingEvent.id, updates);
+    setEditingEvent(null);
   };
 
   const handleAddPlayer = () => {
@@ -238,12 +400,23 @@ export const Admin: React.FC = () => {
                 <input type="text" value={newEventTitle} onChange={e => setNewEventTitle(e.target.value)} placeholder="Event-Titel" className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Datum</label>
-                <input type="date" value={newEventDate} onChange={e => setNewEventDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Datum (Von)</label>
+                <DateInput value={newEventDate} onChange={setNewEventDate} className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Uhrzeit</label>
-                <input type="time" value={newEventTime} onChange={e => setNewEventTime(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Datum (Bis)</label>
+                <DateInput value={newEventEndDate} onChange={setNewEventEndDate} className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
+                <span className="text-xs text-gray-400">Optional, für mehrtägige Events</span>
+              </div>
+              <div className="flex items-center gap-3 md:col-span-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={newEventAllDay} onChange={e => setNewEventAllDay(e.target.checked)} className="w-4 h-4 rounded border-gray-300 text-chnebel-red focus:ring-chnebel-red" />
+                  <span className="text-sm font-medium text-gray-700">Ganztägig</span>
+                </label>
+              </div>
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${newEventAllDay ? 'text-gray-400' : 'text-gray-700'}`}>Uhrzeit</label>
+                <TimeInput value={newEventTime} onChange={setNewEventTime} disabled={newEventAllDay} className={`w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red ${newEventAllDay ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''}`} />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Ort</label>
@@ -261,30 +434,29 @@ export const Admin: React.FC = () => {
             </div>
           </div>
           <div className="space-y-3">
-            {events.map(event => (
+            {[...events].sort((a, b) => getEventStartDate(a).getTime() - getEventStartDate(b).getTime()).map(event => (
               <div key={event.id} className="flex items-center gap-3 p-4 bg-chnebel-gray rounded-lg border border-gray-200">
                 <div className="flex-1">
                   <div className="font-medium text-chnebel-black">{event.title}</div>
-                  <div className="text-sm text-gray-500">{event.type} · {new Date(event.startDateTime).toLocaleDateString('de-CH')} · {event.location || '-'}</div>
+                  <div className="text-sm text-gray-500">{event.type} · {formatEventDateDisplay(event)} · {event.location || '-'}</div>
                   {event.interclub && <div className="text-sm text-gray-500">vs. {event.interclub.opponent} · {event.interclub.matchStatus} · {event.interclub.totalScore.ourScore}:{event.interclub.totalScore.opponentScore}</div>}
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => openAttendanceModal(event.id)} className="px-3 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600" title="Anwesenheit">👥</button>
+                  <button onClick={() => openEditEventModal(event)} className="px-3 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600" title="Bearbeiten">✏️</button>
+                  <button onClick={() => openAttendanceModal(event.id)} className="px-3 py-1 bg-orange-500 text-white rounded text-xs hover:bg-orange-600" title="Anwesenheit">👥</button>
                   {event.interclub && (
                     <button onClick={() => openResultsModal(event)} className="px-3 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600" title="Ergebnisse">📊</button>
                   )}
-                  {event.interclub && (
-                    <button
-                      onClick={() => {
-                        const link = prompt('Instagram Link:', event.interclub?.instagramLink || '');
-                        if (link !== null && event.interclub) {
-                          updateEvent(event.id, { interclub: { ...event.interclub, instagramLink: link || undefined } });
-                        }
-                      }}
-                      className="px-3 py-1 bg-purple-500 text-white rounded text-xs hover:bg-purple-600"
-                      title="Instagram Link"
-                    >📸</button>
-                  )}
+                  <button
+                    onClick={() => {
+                      const link = prompt('Instagram Link:', event.instagramLink || '');
+                      if (link !== null) {
+                        updateEvent(event.id, { instagramLink: link || undefined });
+                      }
+                    }}
+                    className="px-3 py-1 bg-purple-500 text-white rounded text-xs hover:bg-purple-600"
+                    title="Instagram Link"
+                  >📸</button>
                   <button onClick={() => { if (window.confirm(`Event "${event.title}" löschen?`)) removeEvent(event.id); }} className="px-3 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600" title="Löschen">🗑️</button>
                 </div>
               </div>
@@ -462,6 +634,65 @@ export const Admin: React.FC = () => {
         </div>
       )}
 
+      {/* === EDIT EVENT MODAL === */}
+      {editingEvent && (
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4" onClick={() => setEditingEvent(null)}>
+          <div className="bg-white rounded-lg shadow-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="bg-gradient-to-r from-chnebel-red to-[#c4161e] text-white p-4 rounded-t-lg flex items-center justify-between">
+              <h2 className="text-xl font-bold">Event bearbeiten</h2>
+              <button onClick={() => setEditingEvent(null)} className="text-white hover:bg-white/20 rounded-full p-1">✕</button>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Typ</label>
+                  <select value={editEventType} onChange={e => setEditEventType(e.target.value as EventType)} className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red">
+                    {eventTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Titel</label>
+                  <input type="text" value={editEventTitle} onChange={e => setEditEventTitle(e.target.value)} placeholder="Event-Titel" className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Datum (Von)</label>
+                  <DateInput value={editEventDate} onChange={setEditEventDate} className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Datum (Bis)</label>
+                  <DateInput value={editEventEndDate} onChange={setEditEventEndDate} className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
+                  <span className="text-xs text-gray-400">Optional, für mehrtägige Events</span>
+                </div>
+                <div className="flex items-center gap-3 md:col-span-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={editEventAllDay} onChange={e => setEditEventAllDay(e.target.checked)} className="w-4 h-4 rounded border-gray-300 text-chnebel-red focus:ring-chnebel-red" />
+                    <span className="text-sm font-medium text-gray-700">Ganztägig</span>
+                  </label>
+                </div>
+                <div>
+                  <label className={`block text-sm font-medium mb-1 ${editEventAllDay ? 'text-gray-400' : 'text-gray-700'}`}>Uhrzeit</label>
+                  <TimeInput value={editEventTime} onChange={setEditEventTime} disabled={editEventAllDay} className={`w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red ${editEventAllDay ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''}`} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Ort</label>
+                  <input type="text" value={editEventLocation} onChange={e => setEditEventLocation(e.target.value)} placeholder="Ort" className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
+                </div>
+                {editEventType === 'Interclub' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Gegner</label>
+                    <input type="text" value={editEventOpponent} onChange={e => setEditEventOpponent(e.target.value)} placeholder="Gegner" className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="p-4 border-t flex justify-end gap-3">
+              <button onClick={() => setEditingEvent(null)} className="px-4 py-2 text-gray-700 bg-gray-100 rounded hover:bg-gray-200">Abbrechen</button>
+              <button onClick={handleSaveEvent} disabled={!isEditEventFormValid()} className="px-6 py-2 bg-chnebel-red text-white rounded font-semibold hover:bg-[#c4161e] disabled:opacity-50">Speichern</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* === ATTENDANCE MODAL === */}
       {attendanceEventId && (
         <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4" onClick={() => setAttendanceEventId(null)}>
@@ -494,7 +725,7 @@ export const Admin: React.FC = () => {
                 <div>
                   <h2 className="text-2xl font-bold">Ergebnisse: {resultsEvent.interclub!.opponent}</h2>
                   <div className="text-white/80 text-sm mt-1">
-                    {new Date(resultsEvent.startDateTime).toLocaleDateString('de-CH')} · {resultsEvent.location}
+                    {formatEventDateDisplay(resultsEvent)} · {resultsEvent.location}
                   </div>
                 </div>
                 <button onClick={() => setResultsEvent(null)} className="text-white hover:bg-white/20 rounded-full p-2">✕</button>

@@ -6,6 +6,7 @@ import {
   addDoc,
   updateDoc,
   deleteDoc,
+  deleteField,
 } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 import {
@@ -50,7 +51,32 @@ export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     const colRef = collection(db, COLLECTION);
     const unsubscribe = onSnapshot(colRef, (snapshot) => {
-      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as AppEvent));
+      const data = snapshot.docs.map(d => {
+        const raw = d.data() as any;
+        // Migrate legacy interclub.instagramLink to top-level
+        if (raw.interclub?.instagramLink && !raw.instagramLink) {
+          raw.instagramLink = raw.interclub.instagramLink;
+          delete raw.interclub.instagramLink;
+        }
+        // Migrate legacy startDateTime (ISO string) to new date/time fields
+        if (raw.startDateTime && !raw.startDate) {
+          const dt = new Date(raw.startDateTime);
+          const y = dt.getFullYear();
+          const mo = String(dt.getMonth() + 1).padStart(2, '0');
+          const da = String(dt.getDate()).padStart(2, '0');
+          raw.startDate = `${y}-${mo}-${da}`;
+          const hh = String(dt.getHours()).padStart(2, '0');
+          const mm = String(dt.getMinutes()).padStart(2, '0');
+          raw.startTime = `${hh}:${mm}`;
+          raw.allDay = false;
+          delete raw.startDateTime;
+        }
+        // Ensure allDay has a default
+        if (raw.allDay === undefined) {
+          raw.allDay = !raw.startTime;
+        }
+        return { id: d.id, ...raw } as AppEvent;
+      });
       setAllEvents(data);
       setLoading(false);
     }, (error) => {
@@ -97,7 +123,12 @@ export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
     // Remove 'id' from updates to avoid writing it as a field
     const { id: _id, ...cleanUpdates } = updates as AppEvent;
-    await updateDoc(doc(db, COLLECTION, id), cleanUpdates);
+    // Replace undefined values with deleteField() so Firestore removes them
+    const firestoreUpdates: Record<string, any> = {};
+    for (const [key, value] of Object.entries(cleanUpdates)) {
+      firestoreUpdates[key] = value === undefined ? deleteField() : value;
+    }
+    await updateDoc(doc(db, COLLECTION, id), firestoreUpdates);
   }, [allEvents]);
 
   const removeEvent = useCallback(async (id: string) => {

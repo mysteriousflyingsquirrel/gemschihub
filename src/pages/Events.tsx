@@ -3,7 +3,7 @@ import { PageTitle } from '../components/PageTitle';
 import { useEvents } from '../contexts/EventsContext';
 import { usePlayers } from '../contexts/PlayersContext';
 import { useAttendance } from '../contexts/AttendanceContext';
-import { AppEvent, deriveEventStatus, calculateGameWinner } from '../types/event';
+import { AppEvent, deriveEventStatus, calculateGameWinner, getEventStartDate, formatEventDateDisplay } from '../types/event';
 
 const getScoreColor = (ourScore: number, opponentScore: number) => {
   if (ourScore > opponentScore) return 'text-green-800 bg-green-100';
@@ -48,25 +48,15 @@ export const Events: React.FC = () => {
   const filteredEvents = useMemo(() => {
     const filtered = activeTab === 'all' ? events : events.filter(e => e.type === activeTab);
     // Sort ascending: oldest first, newest last
-    return [...filtered].sort((a, b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime());
+    return [...filtered].sort((a, b) => getEventStartDate(a).getTime() - getEventStartDate(b).getTime());
   }, [events, activeTab]);
 
   // Find the next upcoming event (first event whose start is in the future)
   const nextEventId = useMemo(() => {
     const now = new Date().getTime();
-    const upcoming = filteredEvents.find(e => new Date(e.startDateTime).getTime() > now);
+    const upcoming = filteredEvents.find(e => getEventStartDate(e).getTime() > now);
     return upcoming?.id || null;
   }, [filteredEvents]);
-
-  const formatDate = (iso: string) => {
-    const d = new Date(iso);
-    return d.toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  };
-
-  const formatTime = (iso: string) => {
-    const d = new Date(iso);
-    return d.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
-  };
 
   const eventAttendees = selectedEvent ? getEventAttendees(selectedEvent.id) : [];
 
@@ -108,7 +98,7 @@ export const Events: React.FC = () => {
           </thead>
           <tbody>
             {filteredEvents.map((event) => {
-              const status = deriveEventStatus(event.startDateTime);
+              const status = deriveEventStatus(event);
               const statusBadge = getStatusBadge(status);
               const isNext = event.id === nextEventId;
               return (
@@ -132,7 +122,7 @@ export const Events: React.FC = () => {
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-chnebel-black">{formatDate(event.startDateTime)}</td>
+                  <td className="px-6 py-4 text-chnebel-black">{formatEventDateDisplay(event)}</td>
                   <td className="px-6 py-4 text-chnebel-black">{event.location || '-'}</td>
                   <td className="px-6 py-4">
                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusBadge.color}`}>
@@ -172,7 +162,7 @@ export const Events: React.FC = () => {
           </div>
         )}
         {filteredEvents.map((event) => {
-          const status = deriveEventStatus(event.startDateTime);
+          const status = deriveEventStatus(event);
           const statusBadge = getStatusBadge(status);
           const isNext = event.id === nextEventId;
           return (
@@ -198,7 +188,7 @@ export const Events: React.FC = () => {
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600">
-                <span>📅 {formatDate(event.startDateTime)}</span>
+                <span>📅 {formatEventDateDisplay(event)}</span>
                 {event.location && <span>📍 {event.location}</span>}
                 {event.interclub && (
                   <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getScoreColor(event.interclub.totalScore.ourScore, event.interclub.totalScore.opponentScore)}`}>
@@ -228,7 +218,7 @@ export const Events: React.FC = () => {
                   <div className="text-sm text-white/80 mb-1">{getEventTypeIcon(selectedEvent.type)} {selectedEvent.type}</div>
                   <h2 className="text-2xl font-bold mb-2">{selectedEvent.title}</h2>
                   <div className="flex items-center gap-4 text-white/90 text-sm">
-                    <span>📅 {formatDate(selectedEvent.startDateTime)} {formatTime(selectedEvent.startDateTime)}</span>
+                    <span>📅 {formatEventDateDisplay(selectedEvent)}</span>
                     {selectedEvent.location && <span>📍 {selectedEvent.location}</span>}
                   </div>
                 </div>
@@ -346,20 +336,21 @@ export const Events: React.FC = () => {
                     </section>
                   )}
 
-                  {/* Instagram Link */}
-                  {selectedEvent.interclub.instagramLink && (
-                    <section className="mb-6">
-                      <a
-                        href={selectedEvent.interclub.instagramLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity"
-                      >
-                        📸 Match Recap auf Instagram
-                      </a>
-                    </section>
-                  )}
                 </>
+              )}
+
+              {/* Instagram Link (all event types) */}
+              {selectedEvent.instagramLink && (
+                <section className="mb-6">
+                  <a
+                    href={selectedEvent.instagramLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity"
+                  >
+                    📸 Event Recap auf Instagram
+                  </a>
+                </section>
               )}
 
               {/* Attendance (all event types) */}

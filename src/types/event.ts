@@ -32,7 +32,6 @@ export interface InterclubData {
   singlesGames: SinglesGame[];
   doublesGames: DoublesGame[];
   totalScore: { ourScore: number; opponentScore: number };
-  instagramLink?: string;
 }
 
 export interface AppEvent {
@@ -40,20 +39,58 @@ export interface AppEvent {
   seasonId: string;
   type: EventType;
   title: string;
-  startDateTime: string; // ISO date-time string
+  startDate: string;        // "YYYY-MM-DD"
+  startTime?: string;        // "HH:MM" — omitted for all-day events
+  endDate?: string;          // "YYYY-MM-DD" — omitted for single-day events
+  allDay: boolean;           // true when no time is specified
   location?: string;
+  instagramLink?: string;
   interclub?: InterclubData; // Only present when type === 'Interclub'
 }
 
-/** Derive event status from start time. */
-export function deriveEventStatus(startDateTime: string, durationHours: number = 2): EventStatus {
+/** Build a comparable Date from an event's start fields. */
+export function getEventStartDate(event: Pick<AppEvent, 'startDate' | 'startTime' | 'allDay'>): Date {
+  if (event.allDay || !event.startTime) {
+    return new Date(`${event.startDate}T00:00:00`);
+  }
+  return new Date(`${event.startDate}T${event.startTime}:00`);
+}
+
+/** Derive event status from date fields. */
+export function deriveEventStatus(event: Pick<AppEvent, 'startDate' | 'startTime' | 'endDate' | 'allDay'>, durationHours: number = 2): EventStatus {
   const now = new Date();
-  const start = new Date(startDateTime);
-  const end = new Date(start.getTime() + durationHours * 60 * 60 * 1000);
+  const start = getEventStartDate(event);
+
+  let end: Date;
+  if (event.endDate) {
+    end = new Date(`${event.endDate}T23:59:59`);
+  } else if (event.allDay) {
+    end = new Date(`${event.startDate}T23:59:59`);
+  } else {
+    end = new Date(start.getTime() + durationHours * 60 * 60 * 1000);
+  }
 
   if (now < start) return 'Upcoming';
-  if (now >= start && now <= end) return 'Ongoing';
+  if (now <= end) return 'Ongoing';
   return 'Completed';
+}
+
+/** Format an event's date/time for display. */
+export function formatEventDateDisplay(event: Pick<AppEvent, 'startDate' | 'startTime' | 'endDate' | 'allDay'>): string {
+  const fmtDate = (dateStr: string) => {
+    const [y, m, d] = dateStr.split('-');
+    return `${d}.${m}.${y}`;
+  };
+
+  const startStr = fmtDate(event.startDate);
+
+  if (event.endDate && event.endDate !== event.startDate) {
+    return `${startStr} – ${fmtDate(event.endDate)}`;
+  }
+  if (event.allDay) {
+    return `${startStr} (Ganztägig)`;
+  }
+  return `${startStr}, ${event.startTime}`;
 }
 
 /** Calculate game winner from set scores (best of 3). */
