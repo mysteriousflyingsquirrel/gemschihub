@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { SeasonSelector } from './SeasonSelector';
-import logo from '../assets/chnebel-logo.jpg';
+import logo from '../assets/chnebel-logo-transparent.png';
 
 interface SidebarProps {
   isMobileMenuOpen: boolean;
@@ -68,14 +68,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileMenuOpen, onMobileMenu
           }
         `}
       >
-        {/* Header with Logo */}
-        <div className="p-5 bg-gradient-to-r from-chnebel-red to-[#c4161e] flex flex-col items-center gap-3 shadow-lg flex-shrink-0">
+        {/* Header with Logo + Fire Effect */}
+        <div className="sidebar-fire p-5 flex flex-col items-center gap-3 flex-shrink-0">
           <img
             src={logo}
             alt="Chnebel Logo"
-            className="w-32 h-32 object-cover rounded-lg bg-white/10 p-1 shadow-lg flex-shrink-0"
+            className="w-32 h-32 object-contain relative z-10"
           />
-          <div className="text-center">
+          <div className="text-center relative z-10">
             <h1 className="text-white text-xl font-bold leading-tight m-0 drop-shadow-lg">
               GemschiHub
             </h1>

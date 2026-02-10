@@ -19,3 +19,62 @@
   }
 }
 
+/* === Fire effect behind sidebar logo === */
+.sidebar-fire {
+  position: relative;
+  overflow: hidden;
+  background: black;
+  isolation: isolate;
+}
+
+/* Base fire layer: noise + gradient scrolling upward */
+.sidebar-fire::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    url("/noise-texture.png"),
+    url("/noise-texture.png"),
+    linear-gradient(
+      0deg,
+      white 0px,
+      #ff8951 5px,
+      #dcbc169c 50%,
+      transparent 95%
+    ),
+    radial-gradient(ellipse at bottom, transparent 50%, black 85%);
+  background-size: 350px 500px, 400px 650px, 100% 100%, 100% 100%;
+  background-blend-mode: hard-light, color-dodge, multiply;
+  background-position: center 0px, center 0px, 50% 100%, center center;
+  background-repeat: repeat, repeat, repeat, no-repeat;
+  filter: brightness(3.7) blur(7px) contrast(6);
+  animation: sidebar-fire 1.75s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Color tint overlay to shift the fire to red/orange */
+.sidebar-fire::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    0deg,
+    rgba(237, 27, 36, 0.7) 0%,
+    rgba(255, 100, 0, 0.4) 60%,
+    transparent 100%
+  );
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  z-index: 2;
+}
+
+@keyframes sidebar-fire {
+  0% {
+    background-position: center 0px, center 0px, 50% 100%, center center;
+  }
+  100% {
+    background-position: center -500px, center -650px, 50% 100%, center center;
+  }
+}
+
