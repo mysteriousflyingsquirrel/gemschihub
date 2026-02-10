@@ -43,13 +43,13 @@ export const Verfassung: React.FC = () => {
             <h3 className="text-lg font-semibold mb-3 text-chnebel-red">Bierversammlung</h3>
             <div className="space-y-3">
               <div className="bg-chnebel-gray rounded-lg p-4">
-                <p><strong>Art. 2)</strong> Die j&auml;hrliche Bierversammlung findet immer am Teamdynamikf&ouml;rderungswochenendausflug statt. Diese kann ausschliesslich in einer Bar oder Pub mit Hopfen Ausschanklizenz am Zielort des Teamdynamikf&ouml;rderungswochenendausflug ausgef&uuml;hrt werden.</p>
+                <p><strong>Art. 2)</strong> Die j&auml;hrliche Bierversammlung findet immer am Teamdynamikf&ouml;rderungsausflug statt. Diese kann ausschliesslich in einer Bar oder Pub mit Hopfen Ausschanklizenz am Zielort des Teamdynamikf&ouml;rderungsausflug ausgef&uuml;hrt werden.</p>
               </div>
               <div className="bg-chnebel-gray rounded-lg p-4">
                 <p><strong>Art. 2a)</strong> Die anwesenden Gemscheni haben das Recht, den GemschiCodex anzupassen oder zu erg&auml;nzen.</p>
               </div>
               <div className="bg-chnebel-gray rounded-lg p-4">
-                <p><strong>Art. 2b)</strong> Die Anwesenheit am Teamdynamikf&ouml;rderungswochenendausflug wie auch der Bierversammlung ist Ehrensache. Absente Gemscheni haben die Entscheidungen stillschweigend zu akzeptieren.</p>
+                <p><strong>Art. 2b)</strong> Die Anwesenheit am Teamdynamikf&ouml;rderungsausflug wie auch der Bierversammlung ist Ehrensache. Absente Gemscheni haben die Entscheidungen stillschweigend zu akzeptieren.</p>
               </div>
             </div>
           </div>
@@ -59,7 +59,7 @@ export const Verfassung: React.FC = () => {
             <h3 className="text-lg font-semibold mb-3 text-chnebel-red">Captain</h3>
             <div className="space-y-3">
               <div className="bg-chnebel-gray rounded-lg p-4">
-                <p><strong>Art. 3)</strong> Der Captain wird j&auml;hrlich am Teamdynamikf&ouml;rderungswochenendausflug an der Bierversammlung durch die anwesenden Gemscheni gew&auml;hlt.</p>
+                <p><strong>Art. 3)</strong> Der Captain wird j&auml;hrlich am Teamdynamikf&ouml;rderungsausflug an der Bierversammlung durch die anwesenden Gemscheni gew&auml;hlt.</p>
               </div>
               <div className="bg-chnebel-gray rounded-lg p-4">
                 <p><strong>Art. 3a)</strong> Das gew&auml;hlte Gemschi hat seinen Verpflichtungen als Captain f&uuml;r die kommende Saison ehrenvoll nachzugehen.</p>
@@ -84,7 +84,7 @@ export const Verfassung: React.FC = () => {
             <h3 className="text-lg font-semibold mb-3 text-chnebel-red">Mitgliederbeitrag</h3>
             <div className="space-y-3">
               <div className="bg-chnebel-gray rounded-lg p-4">
-                <p className="mb-3"><strong>Art. 4)</strong> Jedes Gemschi ist verpflichtet, einen j&auml;hrlichen Mitgliederbeitrag zu entrichten. Der Beitrag wird jeweils w&auml;hrend dem offiziellen Teamdynamikf&ouml;rderungswochenendausflug an der Bierversammlung festgelegt.</p>
+                <p className="mb-3"><strong>Art. 4)</strong> Jedes Gemschi ist verpflichtet, einen j&auml;hrlichen Mitgliederbeitrag zu entrichten. Der Beitrag wird jeweils w&auml;hrend dem offiziellen Teamdynamikf&ouml;rderungsausflug an der Bierversammlung festgelegt.</p>
                 <p className="mb-2">Der Mitgliederbeitrag wird f&uuml;r folgende Zwecke eingesetzt:</p>
                 <ul className="list-disc list-inside ml-4 space-y-1">
                   <li>Anschaffung neue Patches</li>
@@ -93,7 +93,7 @@ export const Verfassung: React.FC = () => {
                 </ul>
               </div>
               <div className="bg-chnebel-gray rounded-lg p-4">
-                <p><strong>Art. 4a)</strong> Die restlichen Mittel aus den Mitgliederbeitr&auml;gen werden am j&auml;hrlichen Teamdynamikf&ouml;rderungswochenendausflug zur anabolischen Muskelf&ouml;rderung eingesetzt. Gemscheni, welche nicht am Teamdynamikf&ouml;rderungswochenendausflug teilnehmen, haben kein Anrecht auf die restlichen Mittel.</p>
+                <p><strong>Art. 4a)</strong> Die restlichen Mittel aus den Mitgliederbeitr&auml;gen werden am j&auml;hrlichen Teamdynamikf&ouml;rderungsausflug zur anabolischen Muskelf&ouml;rderung eingesetzt. Gemscheni, welche nicht am Teamdynamikf&ouml;rderungsausflug teilnehmen, haben kein Anrecht auf die restlichen Mittel.</p>
               </div>
               <div className="bg-chnebel-gray rounded-lg p-4">
                 <p className="mb-3"><strong>Art. 4b)</strong> Eine R&uuml;ckforderung kann aus folgenden unentschuldbaren Gr&uuml;nden geltend gemacht werden:</p>
@@ -104,7 +104,7 @@ export const Verfassung: React.FC = () => {
                   <li>schwere Krankheiten (ohne Selbstdiagnose)</li>
                   <li>eigene Hochzeit</li>
                 </ul>
-                <p className="mb-3">Die R&uuml;ckforderungsantr&auml;ge werden am Teamdynamikf&ouml;rderungswochenendausflug an der Bierversammlung durch die anwesenden Gemscheni genehmigt resp. abgelehnt.</p>
+                <p className="mb-3">Die R&uuml;ckforderungsantr&auml;ge werden am Teamdynamikf&ouml;rderungsausflug an der Bierversammlung durch die anwesenden Gemscheni genehmigt resp. abgelehnt.</p>
                 <p className="italic text-gray-600">Grunds&auml;tzlich werden R&uuml;ckforderungsgesuche nicht gerne gesehen. Die Spende des Mitgliederbeitrages ist Ehrensache.</p>
               </div>
               <div className="bg-chnebel-gray rounded-lg p-4">

@@ -216,9 +216,9 @@ export const Patchsystem: React.FC = () => {
             <PatchAward
               name="Vegas"
               image="/patches/vegas.png"
-              description="What happens in Vegas, stays in Vegas. Der seltenste Patch im System kann ausschliesslich an Teamdynamikf&ouml;rderungswochenendausfl&uuml;gen verliehen werden. Ein Gemschi &uuml;ber&auml;utert komplett. Die Geschichte dahinter wird die &Ouml;ffentlichkeit nie erfahren. Medienanfragen werden rigoros abgeblockt."
+              description="What happens in Vegas, stays in Vegas. Der seltenste Patch im System kann ausschliesslich an Teamdynamikf&ouml;rderungsausflug&uuml;gen verliehen werden. Ein Gemschi &uuml;ber&auml;utert komplett. Die Geschichte dahinter wird die &Ouml;ffentlichkeit nie erfahren. Medienanfragen werden rigoros abgeblockt."
               schwierigkeitsgrad="Sehr Hoch"
-              raritaet="0-n pro Chnebelgemschiteamdynamikf&ouml;rderungswochenendausflug"
+              raritaet="0-n pro Teamdynamikf&ouml;rderungsausflug"
               indikator="Aussage des Angeklagten, Zeugenaussagen, Ger&uuml;chte, Gutachten des Gremiums"
               weiteres="In dubio pro reo"
             />
@@ -226,9 +226,9 @@ export const Patchsystem: React.FC = () => {
             <PatchAward
               name="L&auml;tsch Patch"
               image="/patches/laetsch-patch.png"
-              description="Ein Gemschi entscheidet sich, nichts zum Teamspirit beizutragen und erscheint nicht zu den Teamdynamikf&ouml;rderungswochenendausfl&uuml;gen. Ein solcher ist ein L&auml;tsch, es soll Vogelscheisse auf ihn hageln."
+              description="Ein Gemschi entscheidet sich, nichts zum Teamspirit beizutragen und erscheint nicht zu den Teamdynamikf&ouml;rderungsausflug&uuml;gen. Ein solcher ist ein L&auml;tsch, es soll Vogelscheisse auf ihn hageln."
               schwierigkeitsgrad="Niedrig"
-              raritaet="0-n pro Chnebelgemschiteamdynamikf&ouml;rderungswochenendausflug"
+              raritaet="0-n pro Teamdynamikf&ouml;rderungsausflug"
               indikator="Der L&auml;tsch"
             />
 
