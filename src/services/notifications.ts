@@ -5,6 +5,7 @@ import { app } from '../firebase/firebaseConfig';
 import { storage } from '../storage/StorageService';
 
 const PERMISSION_KEY = 'gemschihub_push_permission';
+const DISMISSED_KEY = 'gemschihub_push_dismissed';
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY || '';
 
 /**
@@ -27,6 +28,27 @@ export function getNotificationPermission(): NotificationPermission | 'unsupport
  */
 export function hasOptedIn(): boolean {
   return storage.get<boolean>(PERMISSION_KEY) === true;
+}
+
+/**
+ * Opt out of notifications (local toggle — doesn't revoke browser permission).
+ */
+export function optOutNotifications(): void {
+  storage.set(PERMISSION_KEY, false);
+}
+
+/**
+ * Check if the user has dismissed the first-visit notification prompt.
+ */
+export function hasSeenPrompt(): boolean {
+  return storage.get<boolean>(DISMISSED_KEY) === true;
+}
+
+/**
+ * Mark the first-visit notification prompt as seen/dismissed.
+ */
+export function dismissPrompt(): void {
+  storage.set(DISMISSED_KEY, true);
 }
 
 /**

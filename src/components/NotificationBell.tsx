@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   isNotificationSupported,
   getNotificationPermission,
   hasOptedIn,
   requestAndRegisterNotifications,
+  optOutNotifications,
 } from '../services/notifications';
 
 interface NotificationBellProps {
@@ -11,30 +12,52 @@ interface NotificationBellProps {
   variant?: 'sidebar' | 'topbar';
 }
 
+/** Bell icon (outline) */
+const BellIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+  </svg>
+);
+
+/** Bell with slash (muted/off) */
+const BellOffIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4l1.405-1.405A2.032 2.032 0 006 12.158V9a6.002 6.002 0 014-5.659V3a2 2 0 114 0v.341c.465.15.9.357 1.3.612M9 21h6M17.7 13.7A7.97 7.97 0 0018 11V9M3 3l18 18" />
+  </svg>
+);
+
 export const NotificationBell: React.FC<NotificationBellProps> = ({ variant = 'sidebar' }) => {
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>(
     getNotificationPermission()
   );
+  const [optedIn, setOptedIn] = useState(hasOptedIn());
   const [loading, setLoading] = useState(false);
-  const [justEnabled, setJustEnabled] = useState(false);
 
-  // Re-check on mount (e.g. user changed browser settings)
   useEffect(() => {
     setPermission(getNotificationPermission());
+    setOptedIn(hasOptedIn());
   }, []);
 
   const supported = isNotificationSupported();
-  const alreadyGranted = permission === 'granted' && hasOptedIn();
+  const isActive = permission === 'granted' && optedIn;
 
-  const handleEnable = async () => {
-    if (loading || alreadyGranted) return;
+  const handleToggle = useCallback(async () => {
+    if (loading) return;
+
+    if (isActive) {
+      // Turn off
+      optOutNotifications();
+      setOptedIn(false);
+      return;
+    }
+
+    // Turn on
     setLoading(true);
     try {
       const token = await requestAndRegisterNotifications();
       if (token) {
         setPermission('granted');
-        setJustEnabled(true);
-        setTimeout(() => setJustEnabled(false), 3000);
+        setOptedIn(true);
       } else {
         setPermission(getNotificationPermission());
       }
@@ -43,80 +66,85 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ variant = 's
     } finally {
       setLoading(false);
     }
-  };
+  }, [loading, isActive]);
 
-  // Don't show anything if not supported
   if (!supported) return null;
 
-  // Topbar variant (compact icon)
+  // ── Topbar variant (compact) ──
   if (variant === 'topbar') {
-    if (alreadyGranted) {
+    if (permission === 'denied') {
       return (
-        <div className="text-white/60 p-2.5 rounded-lg bg-white/10" title="Benachrichtigungen aktiv">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-          </svg>
+        <div className="p-2.5 rounded-lg text-white/30" title="Push blockiert im Browser">
+          <BellOffIcon className="w-6 h-6" />
         </div>
       );
     }
 
     return (
       <button
-        onClick={handleEnable}
+        onClick={handleToggle}
         disabled={loading}
-        className="text-white p-2.5 rounded-lg bg-white/20 hover:bg-white/30 transition-all duration-200 active:scale-95 relative"
-        title="Benachrichtigungen aktivieren"
+        className={`p-2.5 rounded-lg transition-all duration-200 active:scale-95 relative ${
+          isActive
+            ? 'bg-green-500/20 text-green-300 hover:bg-green-500/30'
+            : 'bg-white/20 text-white hover:bg-white/30'
+        }`}
+        title={isActive ? 'Benachrichtigungen aus' : 'Benachrichtigungen an'}
       >
-        <svg className={`w-6 h-6 ${loading ? 'animate-pulse' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-        </svg>
-        {/* Dot indicator that notifications are not yet enabled */}
-        <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-yellow-400 rounded-full animate-pulse border-2 border-[#c4161e]" />
+        {isActive ? (
+          <BellIcon className={`w-6 h-6 ${loading ? 'animate-pulse' : ''}`} />
+        ) : (
+          <BellOffIcon className={`w-6 h-6 ${loading ? 'animate-pulse' : ''}`} />
+        )}
+        {!isActive && !loading && (
+          <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-yellow-400 rounded-full animate-pulse border-2 border-[#c4161e]" />
+        )}
       </button>
     );
   }
 
-  // Sidebar variant (full button row)
-  if (alreadyGranted) {
-    return (
-      <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-white/60 text-sm">
-        <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-        </svg>
-        <span className="flex-1">
-          {justEnabled ? 'Aktiviert!' : 'Benachrichtigungen an'}
-        </span>
-        <svg className="w-4 h-4 text-green-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-        </svg>
-      </div>
-    );
-  }
-
+  // ── Sidebar variant (full row) ──
   if (permission === 'denied') {
     return (
-      <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-white/40 text-sm">
-        <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-        </svg>
+      <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-white/30 text-sm">
+        <BellOffIcon className="w-5 h-5 flex-shrink-0" />
         <span className="flex-1">Push blockiert</span>
+        <span className="text-[10px] text-white/20">Browser</span>
       </div>
     );
   }
 
   return (
     <button
-      onClick={handleEnable}
+      onClick={handleToggle}
       disabled={loading}
-      className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-white text-sm hover:bg-white/10 transition-all duration-200 active:scale-[0.98] disabled:opacity-50"
+      className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm transition-all duration-200 active:scale-[0.98] disabled:opacity-50 ${
+        isActive
+          ? 'bg-green-500/15 text-green-400 hover:bg-green-500/25'
+          : 'text-white hover:bg-white/10'
+      }`}
     >
-      <svg className={`w-5 h-5 flex-shrink-0 ${loading ? 'animate-pulse' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-      </svg>
+      {isActive ? (
+        <BellIcon className={`w-5 h-5 flex-shrink-0 ${loading ? 'animate-pulse' : ''}`} />
+      ) : (
+        <BellOffIcon className={`w-5 h-5 flex-shrink-0 ${loading ? 'animate-pulse' : ''}`} />
+      )}
       <span className="flex-1 text-left">
-        {loading ? 'Aktiviere...' : '🔔 Push aktivieren'}
+        {loading
+          ? 'Aktiviere...'
+          : isActive
+            ? 'Push an'
+            : 'Push aus'
+        }
       </span>
-      <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse flex-shrink-0" />
+      {/* Toggle pill */}
+      <div className={`w-9 h-5 rounded-full flex items-center px-0.5 transition-colors duration-200 ${
+        isActive ? 'bg-green-500' : 'bg-white/20'
+      }`}>
+        <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+          isActive ? 'translate-x-4' : 'translate-x-0'
+        }`} />
+      </div>
     </button>
   );
 };

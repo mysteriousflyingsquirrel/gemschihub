@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
+import { NotificationPrompt } from './NotificationPrompt';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -32,6 +33,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           {children}
         </div>
       </main>
+      <NotificationPrompt />
     </div>
   );
 };
