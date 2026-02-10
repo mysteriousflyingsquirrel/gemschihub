@@ -41,10 +41,6 @@ export const Topbar: React.FC<TopbarProps> = ({ isMenuOpen, onMenuToggle }) => {
       >
         <HamburgerIcon isOpen={isMenuOpen} />
       </button>
-      
-      <h1 className="text-white text-lg font-bold drop-shadow-lg ml-4">
-        GemschiHub
-      </h1>
     </div>
   );
 };
