@@ -279,24 +279,37 @@ export const Events: React.FC = () => {
                       <div className="bg-chnebel-red px-4 py-2 rounded-lg mb-3">
                         <h3 className="text-sm font-bold text-white tracking-wide">Gesamtscore</h3>
                       </div>
-                      <div className="bg-chnebel-gray rounded-lg p-4">
-                        <div className="flex items-center justify-center gap-4">
-                          <div className="text-center">
-                            <div className="text-2xl font-bold text-chnebel-black">Chnebel Gemscheni</div>
-                            <div className={`text-5xl font-bold mt-2 ${selectedEvent.interclub.totalScore.ourScore > selectedEvent.interclub.totalScore.opponentScore ? 'text-green-600' : selectedEvent.interclub.totalScore.ourScore < selectedEvent.interclub.totalScore.opponentScore ? 'text-red-600' : 'text-gray-600'}`}>
-                              {selectedEvent.interclub.totalScore.ourScore}
-                            </div>
+                      <div className="bg-chnebel-gray rounded-lg p-5">
+                        {/* Team names row */}
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-sm font-bold text-chnebel-black uppercase tracking-wide truncate flex-1 text-center">Chnebel Gemscheni</span>
+                          <span className="w-10" />
+                          <span className="text-sm font-bold text-chnebel-black uppercase tracking-wide truncate flex-1 text-center">{selectedEvent.interclub.opponent || 'Gegner'}</span>
+                        </div>
+                        {/* Score row */}
+                        <div className="flex items-center justify-center">
+                          <div className={`flex-1 text-center text-6xl font-extrabold tabular-nums ${
+                            selectedEvent.interclub.totalScore.ourScore > selectedEvent.interclub.totalScore.opponentScore
+                              ? 'text-green-600'
+                              : selectedEvent.interclub.totalScore.ourScore < selectedEvent.interclub.totalScore.opponentScore
+                                ? 'text-red-600'
+                                : 'text-gray-600'
+                          }`}>
+                            {selectedEvent.interclub.totalScore.ourScore}
                           </div>
-                          <div className="text-3xl font-bold text-gray-400">:</div>
-                          <div className="text-center">
-                            <div className="text-2xl font-bold text-chnebel-black">{selectedEvent.interclub.opponent}</div>
-                            <div className={`text-5xl font-bold mt-2 ${selectedEvent.interclub.totalScore.opponentScore > selectedEvent.interclub.totalScore.ourScore ? 'text-green-600' : selectedEvent.interclub.totalScore.opponentScore < selectedEvent.interclub.totalScore.ourScore ? 'text-red-600' : 'text-gray-600'}`}>
-                              {selectedEvent.interclub.totalScore.opponentScore}
-                            </div>
+                          <div className="text-4xl font-bold text-gray-300 mx-3">:</div>
+                          <div className={`flex-1 text-center text-6xl font-extrabold tabular-nums ${
+                            selectedEvent.interclub.totalScore.opponentScore > selectedEvent.interclub.totalScore.ourScore
+                              ? 'text-green-600'
+                              : selectedEvent.interclub.totalScore.opponentScore < selectedEvent.interclub.totalScore.ourScore
+                                ? 'text-red-600'
+                                : 'text-gray-600'
+                          }`}>
+                            {selectedEvent.interclub.totalScore.opponentScore}
                           </div>
                         </div>
-                        <div className="text-center text-sm text-gray-600 mt-3">
-                          Maximum: 9 Punkte (6 Einzel, 3 Doppel)
+                        <div className="text-center text-xs text-gray-400 mt-3">
+                          Max. 9 Punkte (6 Einzel, 3 Doppel)
                         </div>
                       </div>
                     </section>
