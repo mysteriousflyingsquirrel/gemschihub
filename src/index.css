@@ -69,6 +69,18 @@
   z-index: 2;
 }
 
+/* Bottom fade to blend fire into sidebar */
+.sidebar-fire-fade {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background: linear-gradient(to bottom, transparent, #1a1a1a);
+  z-index: 3;
+  pointer-events: none;
+}
+
 @keyframes sidebar-fire {
   0% {
     background-position: center 0px, center 0px, 50% 100%, center center;

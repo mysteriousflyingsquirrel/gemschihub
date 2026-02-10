@@ -69,7 +69,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileMenuOpen, onMobileMenu
         `}
       >
         {/* Header with Logo + Fire Effect */}
-        <div className="sidebar-fire p-5 flex flex-col items-center gap-3 flex-shrink-0">
+        <div className="sidebar-fire pt-5 px-5 pb-3 flex flex-col items-center gap-2 flex-shrink-0">
           <img
             src={logo}
             alt="Chnebel Logo"
@@ -80,6 +80,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileMenuOpen, onMobileMenu
               GemschiHub
             </h1>
           </div>
+          <div className="sidebar-fire-fade" />
         </div>
 
         {/* Season Selector */}
