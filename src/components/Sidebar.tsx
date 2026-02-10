@@ -70,16 +70,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileMenuOpen, onMobileMenu
       >
         {/* Header with Logo + Fire Effect */}
         <div className="sidebar-fire pt-5 px-5 pb-3 flex flex-col items-center gap-2 flex-shrink-0">
+          <div className="text-center relative z-10">
+            <h1 className="text-white text-2xl font-bold leading-tight m-0 drop-shadow-lg">
+              GemschiHub
+            </h1>
+          </div>
           <img
             src={logo}
             alt="Chnebel Logo"
             className="w-32 h-32 object-contain relative z-10"
           />
-          <div className="text-center relative z-10">
-            <h1 className="text-white text-xl font-bold leading-tight m-0 drop-shadow-lg">
-              GemschiHub
-            </h1>
-          </div>
           <div className="sidebar-fire-fade" />
         </div>
 
