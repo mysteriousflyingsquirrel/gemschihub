@@ -27,8 +27,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         isMobileMenuOpen={isMobileMenuOpen}
         onMobileMenuClose={handleMenuClose}
       />
-      <main className="flex-1 lg:ml-[280px] bg-chnebel-gray min-h-screen pt-16 lg:pt-0">
-        <div className="max-w-6xl mx-auto p-4 lg:p-8 bg-white rounded-lg mt-4 lg:mt-8 mb-4 lg:mb-8 shadow-sm">
+      <main className="flex-1 lg:ml-[280px] bg-chnebel-gray min-h-screen pt-16 lg:pt-0 overflow-x-hidden">
+        <div className="max-w-6xl mx-auto p-4 lg:p-8 bg-white rounded-lg mt-4 lg:mt-8 mb-4 lg:mb-8 shadow-sm overflow-hidden">
           {children}
         </div>
       </main>

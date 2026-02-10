@@ -86,9 +86,8 @@ export const Events: React.FC = () => {
         <table className="w-full border-collapse bg-white rounded-lg shadow-sm overflow-hidden">
           <thead>
             <tr className="bg-gradient-to-r from-chnebel-red to-[#c4161e] text-white">
-              <th className="px-6 py-4 text-left font-semibold">Typ</th>
-              <th className="px-6 py-4 text-left font-semibold">Titel</th>
               <th className="px-6 py-4 text-left font-semibold">Datum</th>
+              <th className="px-6 py-4 text-left font-semibold">Event</th>
               <th className="px-6 py-4 text-left font-semibold">Ort</th>
               <th className="px-6 py-4 text-left font-semibold">Status</th>
               {activeTab === 'all' || activeTab === 'Interclub' ? (
@@ -111,9 +110,10 @@ export const Events: React.FC = () => {
                       : 'hover:bg-chnebel-gray/50'
                   }`}
                 >
-                  <td className="px-6 py-4 text-xl">{getEventTypeIcon(event.type)}</td>
+                  <td className="px-6 py-4 text-chnebel-black">{formatEventDateDisplay(event)}</td>
                   <td className="px-6 py-4 text-chnebel-black font-medium">
                     <div className="flex items-center gap-2">
+                      <span className="text-xl">{getEventTypeIcon(event.type)}</span>
                       {event.title}
                       {isNext && (
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-chnebel-red text-white uppercase tracking-wide">
@@ -122,7 +122,6 @@ export const Events: React.FC = () => {
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-chnebel-black">{formatEventDateDisplay(event)}</td>
                   <td className="px-6 py-4 text-chnebel-black">{event.location || '-'}</td>
                   <td className="px-6 py-4">
                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusBadge.color}`}>
@@ -145,7 +144,7 @@ export const Events: React.FC = () => {
             })}
             {filteredEvents.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
                   Keine Events in dieser Saison
                 </td>
               </tr>
@@ -173,28 +172,31 @@ export const Events: React.FC = () => {
                 isNext ? 'border-chnebel-red bg-chnebel-red/5' : 'border-gray-200'
               }`}
             >
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-xl flex-shrink-0">{getEventTypeIcon(event.type)}</span>
-                  <span className="font-medium text-chnebel-black truncate">{event.title}</span>
-                  {isNext && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-chnebel-red text-white uppercase tracking-wide flex-shrink-0">
-                      Next
-                    </span>
-                  )}
-                </div>
+              {/* Row 1: Icon + Name */}
+              <div className="flex items-center gap-2 min-w-0 mb-1">
+                <span className="text-xl flex-shrink-0">{getEventTypeIcon(event.type)}</span>
+                <span className="font-medium text-chnebel-black truncate">{event.title}</span>
+                {isNext && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-chnebel-red text-white uppercase tracking-wide flex-shrink-0">
+                    Next
+                  </span>
+                )}
+              </div>
+              {/* Row 2: Date + Status */}
+              <div className="flex items-center justify-between gap-2 mb-1 text-sm text-gray-600">
+                <span>{formatEventDateDisplay(event)}</span>
                 <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${statusBadge.color}`}>
                   {statusBadge.text}
                 </span>
               </div>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600">
-                <span>📅 {formatEventDateDisplay(event)}</span>
-                {event.location && <span>📍 {event.location}</span>}
-                {event.interclub && (
+              {/* Row 3: Location + Score */}
+              <div className="flex items-center justify-between gap-2 text-sm text-gray-600">
+                <span>{event.location ? `📍 ${event.location}` : ''}</span>
+                {event.interclub ? (
                   <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getScoreColor(event.interclub.totalScore.ourScore, event.interclub.totalScore.opponentScore)}`}>
                     {event.interclub.totalScore.ourScore}:{event.interclub.totalScore.opponentScore}
                   </span>
-                )}
+                ) : null}
               </div>
             </div>
           );

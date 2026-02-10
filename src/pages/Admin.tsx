@@ -363,14 +363,14 @@ export const Admin: React.FC = () => {
 
         {/* === SEASONS === */}
         <CollapsibleSection title="Saisons verwalten" icon="📆">
-          <div className="flex gap-2 mb-4">
-            <input type="text" value={newSeasonName} onChange={e => setNewSeasonName(e.target.value)} placeholder="Neue Saison (z.B. Interclub 2025/2026)" className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
-            <button onClick={handleAddSeason} disabled={!newSeasonName.trim()} className="px-4 py-2 bg-chnebel-red text-white rounded font-semibold hover:bg-[#c4161e] disabled:opacity-50">+ Hinzufügen</button>
+          <div className="flex flex-col sm:flex-row gap-2 mb-4">
+            <input type="text" value={newSeasonName} onChange={e => setNewSeasonName(e.target.value)} placeholder="Neue Saison (z.B. 2026)" className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red" />
+            <button onClick={handleAddSeason} disabled={!newSeasonName.trim()} className="px-4 py-2 bg-chnebel-red text-white rounded font-semibold hover:bg-[#c4161e] disabled:opacity-50 whitespace-nowrap">+ Hinzufügen</button>
           </div>
           <div className="space-y-2">
             {seasons.map(s => (
-              <div key={s.id} className="flex items-center gap-3 p-3 bg-chnebel-gray rounded-lg">
-                <span className="flex-1 font-medium">{s.name}</span>
+              <div key={s.id} className="flex flex-wrap items-center gap-2 p-3 bg-chnebel-gray rounded-lg">
+                <span className="flex-1 min-w-0 font-medium truncate">{s.name}</span>
                 {s.isActive ? (
                   <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">Aktiv</span>
                 ) : (
@@ -435,13 +435,13 @@ export const Admin: React.FC = () => {
           </div>
           <div className="space-y-3">
             {[...events].sort((a, b) => getEventStartDate(a).getTime() - getEventStartDate(b).getTime()).map(event => (
-              <div key={event.id} className="flex items-center gap-3 p-4 bg-chnebel-gray rounded-lg border border-gray-200">
-                <div className="flex-1">
+              <div key={event.id} className="p-4 bg-chnebel-gray rounded-lg border border-gray-200">
+                <div className="mb-2">
                   <div className="font-medium text-chnebel-black">{event.title}</div>
                   <div className="text-sm text-gray-500">{event.type} · {formatEventDateDisplay(event)} · {event.location || '-'}</div>
                   {event.interclub && <div className="text-sm text-gray-500">vs. {event.interclub.opponent} · {event.interclub.matchStatus} · {event.interclub.totalScore.ourScore}:{event.interclub.totalScore.opponentScore}</div>}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2 justify-end">
                   <button onClick={() => openEditEventModal(event)} className="px-3 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600" title="Bearbeiten">✏️</button>
                   <button onClick={() => openAttendanceModal(event.id)} className="px-3 py-1 bg-orange-500 text-white rounded text-xs hover:bg-orange-600" title="Anwesenheit">👥</button>
                   {event.interclub && (
@@ -503,13 +503,15 @@ export const Admin: React.FC = () => {
           </div>
           <div className="space-y-3">
             {players.map(player => (
-              <div key={player.id} className="flex items-center gap-3 p-4 bg-chnebel-gray rounded-lg border border-gray-200">
-                <div className="flex-1">
+              <div key={player.id} className="p-4 bg-chnebel-gray rounded-lg border border-gray-200">
+                <div className="mb-2">
                   <div className="font-medium text-chnebel-black">{player.name} {player.alias && <span className="text-gray-500 italic text-sm">"{player.alias}"</span>}</div>
                   <div className="text-sm text-gray-500">{player.role} · {player.gemschigrad} · {player.klassierung}</div>
                 </div>
-                <button onClick={() => openEditPlayerModal(player)} className="px-3 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600" title="Bearbeiten">✏️</button>
-                <button onClick={() => { if (window.confirm(`Spieler "${player.name}" entfernen?`)) removePlayer(player.id); }} className="px-3 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600" title="Entfernen">🗑️</button>
+                <div className="flex flex-wrap gap-2 justify-end">
+                  <button onClick={() => openEditPlayerModal(player)} className="px-3 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600" title="Bearbeiten">✏️</button>
+                  <button onClick={() => { if (window.confirm(`Spieler "${player.name}" entfernen?`)) removePlayer(player.id); }} className="px-3 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600" title="Entfernen">🗑️</button>
+                </div>
               </div>
             ))}
           </div>
@@ -547,40 +549,47 @@ export const Admin: React.FC = () => {
           <div className="space-y-6">
             {gemschigrads.map(grad => (
               <div key={grad}>
-                <h3 className="font-semibold text-lg mb-3">{grad}</h3>
-                <div className="space-y-2 mb-3">
+                {/* Add form on top */}
+                <div className="bg-chnebel-gray rounded-lg p-4 mb-3">
+                  <h3 className="text-lg font-semibold mb-3">{grad}</h3>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="text"
+                      value={newTenueText[grad] || ''}
+                      onChange={e => setNewTenueText({ ...newTenueText, [grad]: e.target.value })}
+                      onKeyDown={e => { if (e.key === 'Enter' && newTenueText[grad]?.trim()) { addTenueItem(grad, newTenueText[grad].trim()); setNewTenueText({ ...newTenueText, [grad]: '' }); } }}
+                      placeholder="Neues Item..."
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
+                    />
+                    <button
+                      onClick={() => { if (newTenueText[grad]?.trim()) { addTenueItem(grad, newTenueText[grad].trim()); setNewTenueText({ ...newTenueText, [grad]: '' }); } }}
+                      className="px-4 py-2 bg-chnebel-red text-white rounded font-semibold hover:bg-[#c4161e] whitespace-nowrap"
+                    >+ Hinzufügen</button>
+                  </div>
+                </div>
+                {/* List below */}
+                <div className="space-y-2">
                   {tenueData[grad].map(item => (
-                    <div key={item.id} className="flex items-center gap-3 p-3 bg-chnebel-gray rounded-lg">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-chnebel-red flex items-center justify-center text-white font-semibold text-sm">{item.order}</div>
-                      {editingTenue?.grad === grad && editingTenue?.id === item.id ? (
-                        <input
-                          type="text"
-                          defaultValue={item.text}
-                          onBlur={e => { updateTenueItem(grad, item.id, e.target.value); setEditingTenue(null); }}
-                          onKeyDown={e => { if (e.key === 'Enter') { updateTenueItem(grad, item.id, e.currentTarget.value); setEditingTenue(null); } if (e.key === 'Escape') setEditingTenue(null); }}
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                          autoFocus
-                        />
-                      ) : (
-                        <span className="flex-1 cursor-pointer" onClick={() => setEditingTenue({ grad, id: item.id })}>{item.text}</span>
-                      )}
-                      <button onClick={() => { if (window.confirm('Löschen?')) removeTenueItem(grad, item.id); }} className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600">🗑️</button>
+                    <div key={item.id} className="p-3 bg-chnebel-gray rounded-lg border border-gray-200">
+                      <div className="flex items-center gap-3">
+                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-chnebel-red flex items-center justify-center text-white font-semibold text-sm">{item.order}</div>
+                        {editingTenue?.grad === grad && editingTenue?.id === item.id ? (
+                          <input
+                            type="text"
+                            defaultValue={item.text}
+                            onBlur={e => { updateTenueItem(grad, item.id, e.target.value); setEditingTenue(null); }}
+                            onKeyDown={e => { if (e.key === 'Enter') { updateTenueItem(grad, item.id, e.currentTarget.value); setEditingTenue(null); } if (e.key === 'Escape') setEditingTenue(null); }}
+                            className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
+                            autoFocus
+                          />
+                        ) : (
+                          <span className="flex-1 min-w-0 cursor-pointer" onClick={() => setEditingTenue({ grad, id: item.id })}>{item.text}</span>
+                        )}
+                        <button onClick={() => { if (window.confirm('Löschen?')) removeTenueItem(grad, item.id); }} className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600 flex-shrink-0">🗑️</button>
+                      </div>
                     </div>
                   ))}
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={newTenueText[grad] || ''}
-                    onChange={e => setNewTenueText({ ...newTenueText, [grad]: e.target.value })}
-                    onKeyDown={e => { if (e.key === 'Enter' && newTenueText[grad]?.trim()) { addTenueItem(grad, newTenueText[grad].trim()); setNewTenueText({ ...newTenueText, [grad]: '' }); } }}
-                    placeholder="Neues Item..."
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-chnebel-red"
-                  />
-                  <button
-                    onClick={() => { if (newTenueText[grad]?.trim()) { addTenueItem(grad, newTenueText[grad].trim()); setNewTenueText({ ...newTenueText, [grad]: '' }); } }}
-                    className="px-4 py-2 bg-chnebel-red text-white rounded font-semibold hover:bg-[#c4161e]"
-                  >+</button>
+                  {tenueData[grad].length === 0 && <div className="text-gray-500 text-center py-4">Keine Items</div>}
                 </div>
               </div>
             ))}
