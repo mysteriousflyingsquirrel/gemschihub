@@ -57,33 +57,14 @@ export function dismissPrompt(): void {
 }
 
 /**
- * Wait for a service worker registration to reach the "active" state.
+ * Wait for a service worker to be ready (active).
  */
-async function waitForSWActive(reg: ServiceWorkerRegistration, timeoutMs = 10000): Promise<void> {
-  if (reg.active) return;
-
-  return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => {
-      reject(new Error('Service Worker wurde nicht rechtzeitig aktiv (Timeout).'));
-    }, timeoutMs);
-
-    const sw = reg.installing || reg.waiting;
-    if (!sw) {
-      clearTimeout(timeout);
-      reject(new Error('Kein Service Worker gefunden.'));
-      return;
-    }
-
-    sw.addEventListener('statechange', () => {
-      if (sw.state === 'activated' || sw.state === 'active') {
-        clearTimeout(timeout);
-        resolve();
-      } else if (sw.state === 'redundant') {
-        clearTimeout(timeout);
-        reject(new Error('Service Worker wurde als "redundant" markiert.'));
-      }
-    });
-  });
+async function waitForSWReady(timeoutMs = 10000): Promise<ServiceWorkerRegistration> {
+  const ready = navigator.serviceWorker.ready;
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('Service Worker wurde nicht rechtzeitig aktiv (Timeout).')), timeoutMs)
+  );
+  return Promise.race([ready, timeout]);
 }
 
 /**
@@ -138,9 +119,8 @@ export async function requestAndRegisterNotifications(): Promise<NotificationRes
   // Step 5: Register service worker and wait for it to become active
   let registration: ServiceWorkerRegistration;
   try {
-    registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-    // Wait for SW to be fully active before requesting token
-    await waitForSWActive(registration);
+    await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    registration = await waitForSWReady();
   } catch (err: any) {
     console.error('Service Worker registration failed:', err);
     return {
