@@ -22,12 +22,13 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
   console.log('[SW] Received background message:', payload);
 
-  const notificationTitle = payload.notification?.title || 'GemschiHub';
+  const data = payload.data || {};
+  const notificationTitle = data.title || 'GemschiHub';
   const notificationOptions = {
-    body: payload.notification?.body || '',
+    body: data.body || '',
     icon: '/icon-192.png',
     badge: '/favicon-32.png',
-    data: payload.data || {},
+    data: data,
   };
 
   self.registration.showNotification(notificationTitle, notificationOptions);

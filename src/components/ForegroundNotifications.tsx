@@ -31,8 +31,9 @@ export const ForegroundNotifications: React.FC = () => {
       unsubscribe = onMessage(messaging, (payload) => {
         console.log('[Foreground] Push received:', payload);
 
-        const title = payload.notification?.title || 'GemschiHub';
-        const body = payload.notification?.body || '';
+        const data = payload.data || {};
+        const title = data.title || payload.notification?.title || 'GemschiHub';
+        const body = data.body || payload.notification?.body || '';
         const id = ++toastId;
 
         setToasts(prev => [...prev, { id, title, body }]);

@@ -32,15 +32,8 @@ async function sendToAll(title: string, body: string, data?: Record<string, stri
   }
 
   const message: admin.messaging.MulticastMessage = {
-    notification: { title, body },
-    data: data || {},
+    data: { title, body, ...(data || {}) },
     tokens,
-    webpush: {
-      notification: {
-        icon: '/icon-192.png',
-        badge: '/favicon-32.png',
-      },
-    },
   };
 
   const response = await fcm.sendEachForMulticast(message);
