@@ -2,8 +2,14 @@
 /**
  * GemschiHub — Firebase Cloud Functions
  *
- * 1. registerPushToken — Stores an FCM token in Firestore
- * 2. sendNotification  — Sends a custom notification to all subscribers (Captain only)
+ * Callable:
+ *   1. registerPushToken   — Stores an FCM token in Firestore
+ *   2. unregisterPushToken — Removes an FCM token from Firestore
+ *   3. sendNotification    — Sends a custom notification (Captain only)
+ *
+ * Automated:
+ *   4. checkEventReminders — Scheduled: sends reminders before events
+ *   5. onEventUpdated      — Firestore trigger: Interclub score notifications
  */
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -39,53 +45,13 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendNotification = exports.unregisterPushToken = exports.registerPushToken = void 0;
+exports.onEventUpdated = exports.checkEventReminders = exports.sendNotification = exports.unregisterPushToken = exports.registerPushToken = void 0;
 const admin = __importStar(require("firebase-admin"));
 const https_1 = require("firebase-functions/v2/https");
+const send_1 = require("./send");
 admin.initializeApp();
 const db = admin.firestore();
-const fcm = admin.messaging();
-/**
- * Get all stored FCM tokens from Firestore.
- */
-async function getAllTokens() {
-    const snapshot = await db.collection('push_tokens').get();
-    return snapshot.docs.map(doc => doc.data().token).filter(Boolean);
-}
-/**
- * Send a notification to all subscribed devices.
- */
-async function sendToAll(title, body, data) {
-    const tokens = await getAllTokens();
-    if (tokens.length === 0) {
-        console.log('No tokens to send to.');
-        return { success: 0, failure: 0 };
-    }
-    const message = {
-        data: { title, body, ...(data || {}) },
-        tokens,
-    };
-    const response = await fcm.sendEachForMulticast(message);
-    // Clean up invalid tokens
-    const invalidTokens = [];
-    response.responses.forEach((resp, idx) => {
-        var _a;
-        if (!resp.success && ((_a = resp.error) === null || _a === void 0 ? void 0 : _a.code) === 'messaging/registration-token-not-registered') {
-            invalidTokens.push(tokens[idx]);
-        }
-    });
-    if (invalidTokens.length > 0) {
-        const batch = db.batch();
-        const tokenDocs = await db.collection('push_tokens')
-            .where('token', 'in', invalidTokens.slice(0, 10))
-            .get();
-        tokenDocs.docs.forEach(doc => batch.delete(doc.ref));
-        await batch.commit();
-        console.log(`Cleaned up ${tokenDocs.size} invalid tokens.`);
-    }
-    console.log(`Sent: ${response.successCount} success, ${response.failureCount} failure.`);
-    return { success: response.successCount, failure: response.failureCount };
-}
+// ─── Callable Functions ──────────────────────────────────────────
 /**
  * Store a push token (callable from client).
  * One user can have multiple devices, so we only deduplicate by exact token.
@@ -95,7 +61,6 @@ exports.registerPushToken = (0, https_1.onCall)(async (request) => {
     if (!token) {
         throw new https_1.HttpsError('invalid-argument', 'Token is required.');
     }
-    // Deduplicate by token — one entry per device
     const existing = await db.collection('push_tokens')
         .where('token', '==', token)
         .get();
@@ -136,6 +101,11 @@ exports.sendNotification = (0, https_1.onCall)(async (request) => {
     if (!title || !body) {
         throw new https_1.HttpsError('invalid-argument', 'Title and body are required.');
     }
-    return sendToAll(title, body, { type: 'custom' });
+    return (0, send_1.sendToAll)(title, body, { type: 'custom' });
 });
+// ─── Automated Functions (re-exported) ───────────────────────────
+var checkEventReminders_1 = require("./checkEventReminders");
+Object.defineProperty(exports, "checkEventReminders", { enumerable: true, get: function () { return checkEventReminders_1.checkEventReminders; } });
+var onEventUpdated_1 = require("./onEventUpdated");
+Object.defineProperty(exports, "onEventUpdated", { enumerable: true, get: function () { return onEventUpdated_1.onEventUpdated; } });
 //# sourceMappingURL=index.js.map
