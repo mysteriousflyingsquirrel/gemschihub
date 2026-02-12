@@ -39,7 +39,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendNotification = exports.registerPushToken = void 0;
+exports.sendNotification = exports.unregisterPushToken = exports.registerPushToken = void 0;
 const admin = __importStar(require("firebase-admin"));
 const https_1 = require("firebase-functions/v2/https");
 admin.initializeApp();
@@ -104,6 +104,24 @@ exports.registerPushToken = (0, https_1.onCall)(async (request) => {
             token,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
         });
+    }
+    return { success: true };
+});
+/**
+ * Remove a push token (callable from client when user opts out).
+ */
+exports.unregisterPushToken = (0, https_1.onCall)(async (request) => {
+    const { token } = request.data;
+    if (!token) {
+        throw new https_1.HttpsError('invalid-argument', 'Token is required.');
+    }
+    const existing = await db.collection('push_tokens')
+        .where('token', '==', token)
+        .get();
+    if (!existing.empty) {
+        const batch = db.batch();
+        existing.docs.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
     }
     return { success: true };
 });

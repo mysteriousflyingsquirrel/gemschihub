@@ -85,6 +85,28 @@ export const registerPushToken = onCall(async (request) => {
 });
 
 /**
+ * Remove a push token (callable from client when user opts out).
+ */
+export const unregisterPushToken = onCall(async (request) => {
+  const { token } = request.data as { token: string };
+  if (!token) {
+    throw new HttpsError('invalid-argument', 'Token is required.');
+  }
+
+  const existing = await db.collection('push_tokens')
+    .where('token', '==', token)
+    .get();
+
+  if (!existing.empty) {
+    const batch = db.batch();
+    existing.docs.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+  }
+
+  return { success: true };
+});
+
+/**
  * Send a custom notification to all subscribers (Captain only).
  */
 export const sendNotification = onCall(async (request) => {

@@ -1,4 +1,4 @@
-import { getToken } from 'firebase/messaging';
+import { getToken, deleteToken } from 'firebase/messaging';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getMessagingInstance } from '../firebase/firebaseConfig';
 import { app } from '../firebase/firebaseConfig';
@@ -6,6 +6,7 @@ import { storage } from '../storage/StorageService';
 
 const PERMISSION_KEY = 'gemschihub_push_permission';
 const DISMISSED_KEY = 'gemschihub_push_dismissed';
+const TOKEN_KEY = 'gemschihub_push_token';
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY || '';
 
 export interface NotificationResult {
@@ -36,9 +37,33 @@ export function hasOptedIn(): boolean {
 }
 
 /**
- * Opt out of notifications (local toggle — doesn't revoke browser permission).
+ * Opt out of notifications: deletes FCM token locally and from server.
  */
-export function optOutNotifications(): void {
+export async function optOutNotifications(): Promise<void> {
+  // Remove token from server
+  const savedToken = storage.get<string>(TOKEN_KEY);
+  if (savedToken) {
+    try {
+      const functions = getFunctions(app, 'us-central1');
+      const unregisterPushToken = httpsCallable(functions, 'unregisterPushToken');
+      await unregisterPushToken({ token: savedToken });
+    } catch (err) {
+      console.error('Failed to unregister token from server:', err);
+    }
+  }
+
+  // Delete FCM token on device
+  try {
+    const messaging = await getMessagingInstance();
+    if (messaging) {
+      await deleteToken(messaging);
+    }
+  } catch (err) {
+    console.error('Failed to delete FCM token:', err);
+  }
+
+  // Clear local state
+  storage.remove(TOKEN_KEY);
   storage.set(PERMISSION_KEY, false);
 }
 
@@ -171,7 +196,8 @@ export async function requestAndRegisterNotifications(): Promise<NotificationRes
     };
   }
 
-  // Success!
+  // Success! Save token locally for opt-out flow
+  storage.set(TOKEN_KEY, token);
   storage.set(PERMISSION_KEY, true);
   console.log('Push token registered successfully.');
   return { success: true };

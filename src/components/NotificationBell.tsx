@@ -53,14 +53,20 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ variant = 's
   const handleToggle = useCallback(async () => {
     if (loading) return;
     setError(null);
+    setLoading(true);
 
     if (isActive) {
-      optOutNotifications();
-      setOptedIn(false);
+      try {
+        await optOutNotifications();
+        setOptedIn(false);
+      } catch (err: any) {
+        setError('Fehler beim Deaktivieren: ' + (err?.message || 'Unbekannt'));
+      } finally {
+        setLoading(false);
+      }
       return;
     }
 
-    setLoading(true);
     try {
       const result = await requestAndRegisterNotifications();
       if (result.success) {
@@ -152,7 +158,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ variant = 's
         )}
         <span className="flex-1 text-left">
           {loading
-            ? 'Aktiviere...'
+            ? (isActive ? 'Deaktiviere...' : 'Aktiviere...')
             : isActive
               ? 'Push an'
               : 'Push aus'
