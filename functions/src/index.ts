@@ -68,8 +68,7 @@ async function sendToAll(title: string, body: string, data?: Record<string, stri
 
 /**
  * Store a push token (callable from client).
- * Upserts by userId (logged-in) to ensure one token per user.
- * Also cleans up any stale tokens for the same user.
+ * One user can have multiple devices, so we only deduplicate by exact token.
  */
 export const registerPushToken = onCall(async (request) => {
   const { token } = request.data as { token: string };
@@ -78,31 +77,28 @@ export const registerPushToken = onCall(async (request) => {
   }
 
   const userId = request.auth?.uid || null;
-  const batch = db.batch();
 
-  // If user is logged in, remove all their previous tokens (handles token refresh)
-  if (userId) {
-    const userTokens = await db.collection('push_tokens')
-      .where('userId', '==', userId)
-      .get();
-    userTokens.docs.forEach(doc => batch.delete(doc.ref));
-  }
-
-  // Also remove any existing doc with this exact token (from any user)
+  // Only remove docs with this exact token (avoids duplicates from same device)
   const exactMatch = await db.collection('push_tokens')
     .where('token', '==', token)
     .get();
-  exactMatch.docs.forEach(doc => batch.delete(doc.ref));
 
-  // Add the new token
-  const newRef = db.collection('push_tokens').doc();
-  batch.set(newRef, {
-    token,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    userId,
-  });
+  if (!exactMatch.empty) {
+    // Token already exists — update userId/timestamp
+    const docRef = exactMatch.docs[0].ref;
+    await docRef.update({
+      userId,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  } else {
+    // New token — add it
+    await db.collection('push_tokens').add({
+      token,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      userId,
+    });
+  }
 
-  await batch.commit();
   return { success: true };
 });
 

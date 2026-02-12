@@ -1,5 +1,4 @@
 import React from 'react';
-import { NotificationBell } from './NotificationBell';
 
 interface TopbarProps {
   isMenuOpen: boolean;
@@ -34,7 +33,7 @@ const HamburgerIcon: React.FC<{ isOpen: boolean }> = ({ isOpen }) => (
 
 export const Topbar: React.FC<TopbarProps> = ({ isMenuOpen, onMenuToggle }) => {
   return (
-    <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-chnebel-red to-[#c4161e] shadow-lg z-50 flex items-center justify-between px-4">
+    <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-chnebel-red to-[#c4161e] shadow-lg z-50 flex items-center px-4">
       <button
         onClick={onMenuToggle}
         className="text-white p-2 rounded-lg hover:bg-white/20 transition-all duration-200 active:scale-95"
@@ -42,7 +41,6 @@ export const Topbar: React.FC<TopbarProps> = ({ isMenuOpen, onMenuToggle }) => {
       >
         <HamburgerIcon isOpen={isMenuOpen} />
       </button>
-      <NotificationBell variant="topbar" />
     </div>
   );
 };
