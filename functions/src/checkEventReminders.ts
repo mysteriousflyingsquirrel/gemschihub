@@ -6,6 +6,9 @@
  *   - Interclub: 1 day, 6h, and 1h before
  *
  * Uses a `notification_log` Firestore collection to avoid duplicate sends.
+ *
+ * IMPORTANT: All event times are stored in Europe/Zurich local time.
+ * The server runs in UTC, so we must convert properly.
  */
 
 import * as admin from 'firebase-admin';
@@ -19,7 +22,45 @@ import {
 } from './notificationMessages';
 import { sendToAll } from './send';
 
-const db = admin.firestore();
+/** Lazy accessor — avoids calling firestore() before initializeApp(). */
+function getDb() {
+  return admin.firestore();
+}
+
+// ─── Timezone Handling ───────────────────────────────────────────
+
+const TIMEZONE = 'Europe/Zurich';
+
+/**
+ * Get current date string (YYYY-MM-DD) in Europe/Zurich timezone.
+ */
+function getZurichDateString(date: Date): string {
+  return date.toLocaleDateString('sv-SE', { timeZone: TIMEZONE }); // sv-SE gives YYYY-MM-DD
+}
+
+/**
+ * Parse an event's start date+time as a Europe/Zurich local time
+ * and return a UTC Date object for comparison with Date.now().
+ *
+ * Events store dates as "YYYY-MM-DD" and times as "HH:MM" in Swiss local time.
+ */
+function parseEventStartAsUTC(startDate: string, startTime?: string, allDay?: boolean): Date {
+  const time = (allDay || !startTime) ? DEFAULT_TIME : startTime;
+  // Build an ISO-ish string and use Intl to figure out the UTC offset
+  const [hours, minutes] = time.split(':').map(Number);
+  const [year, month, day] = startDate.split('-').map(Number);
+
+  // Create a date in UTC first, then find what the offset is for Zurich at that moment
+  const roughUtc = new Date(Date.UTC(year, month - 1, day, hours, minutes, 0));
+
+  // Get the Zurich offset by comparing formatted Zurich time to UTC
+  const zurichStr = roughUtc.toLocaleString('en-US', { timeZone: TIMEZONE });
+  const zurichDate = new Date(zurichStr);
+  const offsetMs = zurichDate.getTime() - roughUtc.getTime();
+
+  // The actual UTC time = local time - offset
+  return new Date(roughUtc.getTime() - offsetMs);
+}
 
 // ─── Reminder Windows (in minutes) ──────────────────────────────
 
@@ -31,25 +72,29 @@ interface ReminderWindow {
   eventTypes: string[]; // which event types get this reminder
 }
 
+/**
+ * Windows are 15 minutes wide to reliably catch the 5-minute cron.
+ * Deduplication (notification_log) prevents double-sends.
+ */
 const REMINDER_WINDOWS: ReminderWindow[] = [
   {
     type: '1d',
-    minBefore: 24 * 60 + 10, // 24h10m
-    maxBefore: 24 * 60 - 5,  // 23h55m
+    minBefore: 24 * 60 + 10, // 24h10m before
+    maxBefore: 24 * 60 - 5,  // 23h55m before
     template: REMINDER_1D,
     eventTypes: ['Interclub'],
   },
   {
     type: '6h',
-    minBefore: 6 * 60 + 10,  // 6h10m
-    maxBefore: 6 * 60 - 5,   // 5h55m
+    minBefore: 6 * 60 + 10,  // 6h10m before
+    maxBefore: 6 * 60 - 5,   // 5h55m before
     template: REMINDER_6H,
     eventTypes: ['Training', 'Interclub', 'Spirit'],
   },
   {
     type: '1h',
-    minBefore: 60 + 10,      // 1h10m
-    maxBefore: 60 - 5,       // 55m
+    minBefore: 60 + 10,      // 1h10m before
+    maxBefore: 60 - 10,      // 50m before (wider: 20 min window)
     template: REMINDER_1H,
     eventTypes: ['Training', 'Interclub', 'Spirit'],
   },
@@ -60,18 +105,13 @@ const DEFAULT_TIME = '09:00';
 
 // ─── Helpers ─────────────────────────────────────────────────────
 
-function parseEventStart(startDate: string, startTime?: string, allDay?: boolean): Date {
-  const time = (allDay || !startTime) ? DEFAULT_TIME : startTime;
-  return new Date(`${startDate}T${time}:00`);
-}
-
 function formatDate(dateStr: string): string {
   const [y, m, d] = dateStr.split('-');
   return `${d}.${m}.${y}`;
 }
 
 async function wasAlreadySent(eventId: string, reminderType: string): Promise<boolean> {
-  const snap = await db.collection('notification_log')
+  const snap = await getDb().collection('notification_log')
     .where('eventId', '==', eventId)
     .where('reminderType', '==', reminderType)
     .limit(1)
@@ -80,7 +120,7 @@ async function wasAlreadySent(eventId: string, reminderType: string): Promise<bo
 }
 
 async function markAsSent(eventId: string, reminderType: string): Promise<void> {
-  await db.collection('notification_log').add({
+  await getDb().collection('notification_log').add({
     eventId,
     reminderType,
     sentAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -90,17 +130,20 @@ async function markAsSent(eventId: string, reminderType: string): Promise<void> 
 // ─── Scheduled Function ──────────────────────────────────────────
 
 export const checkEventReminders = onSchedule(
-  { schedule: 'every 5 minutes', timeZone: 'Europe/Zurich' },
+  { schedule: 'every 5 minutes', timeZone: TIMEZONE },
   async () => {
     const now = new Date();
-    console.log(`[Reminders] Running at ${now.toISOString()}`);
+    const nowUtcMs = now.getTime();
+    console.log(`[Reminders] Running at ${now.toISOString()} (UTC)`);
 
-    // Fetch events starting today or tomorrow (covers 1-day-ahead reminders)
-    const today = now.toISOString().slice(0, 10); // YYYY-MM-DD
-    const tomorrow = new Date(now.getTime() + 26 * 60 * 60 * 1000)
-      .toISOString().slice(0, 10);
+    // Get today/tomorrow in Zurich timezone for the Firestore query
+    const today = getZurichDateString(now);
+    const tomorrowDate = new Date(nowUtcMs + 30 * 60 * 60 * 1000); // +30h to be safe
+    const tomorrow = getZurichDateString(tomorrowDate);
 
-    const snapshot = await db.collection('events')
+    console.log(`[Reminders] Checking events from ${today} to ${tomorrow} (Zurich time)`);
+
+    const snapshot = await getDb().collection('events')
       .where('startDate', '>=', today)
       .where('startDate', '<=', tomorrow)
       .get();
@@ -116,11 +159,13 @@ export const checkEventReminders = onSchedule(
       const event = doc.data();
       const eventId = doc.id;
       const eventType: string = event.type || '';
-      const eventStart = parseEventStart(event.startDate, event.startTime, event.allDay);
+      const eventStartUtc = parseEventStartAsUTC(event.startDate, event.startTime, event.allDay);
 
-      // Minutes until event start
-      const diffMs = eventStart.getTime() - now.getTime();
+      // Minutes until event start (both in UTC, so comparison is correct)
+      const diffMs = eventStartUtc.getTime() - nowUtcMs;
       const diffMin = diffMs / (1000 * 60);
+
+      console.log(`[Reminders] Event "${event.title}" (${eventId}): starts ${event.startDate} ${event.startTime || 'all-day'}, diffMin=${diffMin.toFixed(1)}`);
 
       for (const window of REMINDER_WINDOWS) {
         // Skip if event type doesn't match this reminder
@@ -149,7 +194,7 @@ export const checkEventReminders = onSchedule(
 
         const { title, body } = fillTemplate(window.template, values);
 
-        console.log(`[Reminders] Sending ${window.type} reminder for "${event.title}" (${eventId})`);
+        console.log(`[Reminders] Sending ${window.type} reminder for "${event.title}" (${eventId}): "${title}" / "${body}"`);
         await sendToAll(title, body, { type: 'reminder', eventId });
         await markAsSent(eventId, window.type);
       }

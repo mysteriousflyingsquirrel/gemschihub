@@ -40,12 +40,15 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sendToAll = sendToAll;
 const admin = __importStar(require("firebase-admin"));
-const db = admin.firestore();
+/** Lazy accessor — avoids calling firestore() before initializeApp(). */
+function getDb() {
+    return admin.firestore();
+}
 /**
  * Get all stored FCM tokens from Firestore.
  */
 async function getAllTokens() {
-    const snapshot = await db.collection('push_tokens').get();
+    const snapshot = await getDb().collection('push_tokens').get();
     return snapshot.docs.map(doc => doc.data().token).filter(Boolean);
 }
 /**
@@ -73,6 +76,7 @@ async function sendToAll(title, body, data) {
         }
     });
     if (invalidTokens.length > 0) {
+        const db = getDb();
         const batch = db.batch();
         // Firestore 'in' operator supports max 10 items per query
         for (let i = 0; i < invalidTokens.length; i += 10) {
