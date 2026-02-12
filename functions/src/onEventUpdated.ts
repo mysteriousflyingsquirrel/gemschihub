@@ -10,7 +10,8 @@ import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import {
   INTERCLUB_GAME_WON,
   INTERCLUB_GAME_LOST,
-  INTERCLUB_FINAL,
+  INTERCLUB_FINAL_WON,
+  INTERCLUB_FINAL_LOST,
   fillTemplate,
 } from './notificationMessages';
 import { sendToAll } from './send';
@@ -99,16 +100,12 @@ export const onEventUpdated = onDocumentUpdated(
       beforeIC.matchStatus !== 'Gespielt'
     ) {
       const { ourScore, opponentScore } = afterIC.totalScore;
-      let result: string;
-      if (ourScore > opponentScore) result = 'gewonnen! 🎉';
-      else if (ourScore < opponentScore) result = 'verloren';
-      else result = 'unentschieden';
+      const template = ourScore > opponentScore ? INTERCLUB_FINAL_WON : INTERCLUB_FINAL_LOST;
 
-      const { title, body } = fillTemplate(INTERCLUB_FINAL, {
+      const { title, body } = fillTemplate(template, {
         title: eventTitle,
         ourScore: String(ourScore),
         oppScore: String(opponentScore),
-        result,
       });
 
       console.log(`[InterclubScore] Final score for ${eventId}: ${ourScore}:${opponentScore}`);

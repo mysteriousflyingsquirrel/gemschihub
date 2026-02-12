@@ -46,18 +46,25 @@ export const REMINDER_1H = {
 
 export const INTERCLUB_GAME_WON = {
   title: '🏆 {title}',
-  body: '{gameLabel} gewonnen! Stand: {ourScore}:{oppScore}',
+  body: 'Geile Scheisse! {gameLabel} zlataniert! Stand: {ourScore}:{oppScore}',
 };
 
 export const INTERCLUB_GAME_LOST = {
   title: '🏆 {title}',
-  body: '{gameLabel} verloren. Stand: {ourScore}:{oppScore}',
+  body: 'Irgend e Pfiffa het z {gameLabel} verlore! Stand: {ourScore}:{oppScore}',
 };
 
-export const INTERCLUB_FINAL = {
-  title: '🏆 {title} — Endergebnis',
-  body: '{ourScore}:{oppScore} {result}',
+export const INTERCLUB_FINAL_WON = {
+  title: '🏆 {title} - Sieg! 🎉',
+  body: '{ourScore}:{oppScore} - Ab id Möscht!',
 };
+
+export const INTERCLUB_FINAL_LOST = {
+  title: '🏆 {title} - Niederlage',
+  body: '{ourScore}:{oppScore} - No bueno bro!',
+};
+
+
 
 // ─── Helper: Fill placeholders ───────────────────────────────────
 

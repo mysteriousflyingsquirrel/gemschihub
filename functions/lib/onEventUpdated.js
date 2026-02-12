@@ -62,18 +62,11 @@ exports.onEventUpdated = (0, firestore_1.onDocumentUpdated)('events/{eventId}', 
     if (afterIC.matchStatus === 'Gespielt' &&
         beforeIC.matchStatus !== 'Gespielt') {
         const { ourScore, opponentScore } = afterIC.totalScore;
-        let result;
-        if (ourScore > opponentScore)
-            result = 'gewonnen! 🎉';
-        else if (ourScore < opponentScore)
-            result = 'verloren';
-        else
-            result = 'unentschieden';
-        const { title, body } = (0, notificationMessages_1.fillTemplate)(notificationMessages_1.INTERCLUB_FINAL, {
+        const template = ourScore > opponentScore ? notificationMessages_1.INTERCLUB_FINAL_WON : notificationMessages_1.INTERCLUB_FINAL_LOST;
+        const { title, body } = (0, notificationMessages_1.fillTemplate)(template, {
             title: eventTitle,
             ourScore: String(ourScore),
             oppScore: String(opponentScore),
-            result,
         });
         console.log(`[InterclubScore] Final score for ${eventId}: ${ourScore}:${opponentScore}`);
         await (0, send_1.sendToAll)(title, body, { type: 'interclub_final', eventId });
