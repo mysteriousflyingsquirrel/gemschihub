@@ -125,3 +125,4 @@ This spec is considered implemented when:
 - Public users can switch seasons
 - Stats, events, and Spirit values change correctly with season selection
 - No data leaks between seasons
+next
