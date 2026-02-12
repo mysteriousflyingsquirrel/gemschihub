@@ -69,26 +69,15 @@ export const registerPushToken = onCall(async (request) => {
     throw new HttpsError('invalid-argument', 'Token is required.');
   }
 
-  const userId = request.auth?.uid || null;
-
-  // Only remove docs with this exact token (avoids duplicates from same device)
-  const exactMatch = await db.collection('push_tokens')
+  // Deduplicate by token — one entry per device
+  const existing = await db.collection('push_tokens')
     .where('token', '==', token)
     .get();
 
-  if (!exactMatch.empty) {
-    // Token already exists — update userId/timestamp
-    const docRef = exactMatch.docs[0].ref;
-    await docRef.update({
-      userId,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
-  } else {
-    // New token — add it
+  if (existing.empty) {
     await db.collection('push_tokens').add({
       token,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      userId,
     });
   }
 

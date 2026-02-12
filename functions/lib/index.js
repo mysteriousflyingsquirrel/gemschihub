@@ -62,15 +62,8 @@ async function sendToAll(title, body, data) {
         return { success: 0, failure: 0 };
     }
     const message = {
-        notification: { title, body },
-        data: data || {},
+        data: { title, body, ...(data || {}) },
         tokens,
-        webpush: {
-            notification: {
-                icon: '/icon-192.png',
-                badge: '/favicon-32.png',
-            },
-        },
     };
     const response = await fcm.sendEachForMulticast(message);
     // Clean up invalid tokens
@@ -98,30 +91,18 @@ async function sendToAll(title, body, data) {
  * One user can have multiple devices, so we only deduplicate by exact token.
  */
 exports.registerPushToken = (0, https_1.onCall)(async (request) => {
-    var _a;
     const { token } = request.data;
     if (!token) {
         throw new https_1.HttpsError('invalid-argument', 'Token is required.');
     }
-    const userId = ((_a = request.auth) === null || _a === void 0 ? void 0 : _a.uid) || null;
-    // Only remove docs with this exact token (avoids duplicates from same device)
-    const exactMatch = await db.collection('push_tokens')
+    // Deduplicate by token — one entry per device
+    const existing = await db.collection('push_tokens')
         .where('token', '==', token)
         .get();
-    if (!exactMatch.empty) {
-        // Token already exists — update userId/timestamp
-        const docRef = exactMatch.docs[0].ref;
-        await docRef.update({
-            userId,
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
-    }
-    else {
-        // New token — add it
+    if (existing.empty) {
         await db.collection('push_tokens').add({
             token,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            userId,
         });
     }
     return { success: true };
