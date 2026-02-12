@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { NotificationPrompt } from './NotificationPrompt';
+import { ForegroundNotifications } from './ForegroundNotifications';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -34,6 +35,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
       </main>
       <NotificationPrompt />
+      <ForegroundNotifications />
     </div>
   );
 };
