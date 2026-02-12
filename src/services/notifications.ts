@@ -8,6 +8,11 @@ const PERMISSION_KEY = 'gemschihub_push_permission';
 const DISMISSED_KEY = 'gemschihub_push_dismissed';
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY || '';
 
+export interface NotificationResult {
+  success: boolean;
+  error?: string;
+}
+
 /**
  * Check if notifications are supported in the current browser.
  */
@@ -52,52 +57,144 @@ export function dismissPrompt(): void {
 }
 
 /**
- * Request notification permission, get FCM token, and register it server-side.
- * Returns the token if successful, null otherwise.
+ * Wait for a service worker registration to reach the "active" state.
  */
-export async function requestAndRegisterNotifications(): Promise<string | null> {
+async function waitForSWActive(reg: ServiceWorkerRegistration, timeoutMs = 10000): Promise<void> {
+  if (reg.active) return;
+
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(new Error('Service Worker wurde nicht rechtzeitig aktiv (Timeout).'));
+    }, timeoutMs);
+
+    const sw = reg.installing || reg.waiting;
+    if (!sw) {
+      clearTimeout(timeout);
+      reject(new Error('Kein Service Worker gefunden.'));
+      return;
+    }
+
+    sw.addEventListener('statechange', () => {
+      if (sw.state === 'activated' || sw.state === 'active') {
+        clearTimeout(timeout);
+        resolve();
+      } else if (sw.state === 'redundant') {
+        clearTimeout(timeout);
+        reject(new Error('Service Worker wurde als "redundant" markiert.'));
+      }
+    });
+  });
+}
+
+/**
+ * Request notification permission, get FCM token, and register it server-side.
+ * Returns a structured result with success/error info.
+ */
+export async function requestAndRegisterNotifications(): Promise<NotificationResult> {
+  // Step 1: Check browser support
   if (!isNotificationSupported()) {
-    console.warn('Notifications not supported in this browser.');
-    return null;
+    return { success: false, error: 'Dein Browser unterstützt keine Push-Benachrichtigungen.' };
   }
 
+  // Step 2: Check VAPID key
+  if (!VAPID_KEY) {
+    console.error('VAPID key is missing from environment variables.');
+    return { success: false, error: 'Server-Konfiguration fehlt (VAPID Key). Bitte Admin kontaktieren.' };
+  }
+
+  // Step 3: Request permission
+  let permission: NotificationPermission;
   try {
-    const permission = await Notification.requestPermission();
-    if (permission !== 'granted') {
-      console.warn('Notification permission denied.');
-      return null;
-    }
+    permission = await Notification.requestPermission();
+  } catch (err) {
+    console.error('Permission request failed:', err);
+    return { success: false, error: 'Berechtigungsanfrage fehlgeschlagen. Prüfe deine Browser-Einstellungen.' };
+  }
 
-    const messaging = await getMessagingInstance();
-    if (!messaging) {
-      console.error('FCM messaging not available.');
-      return null;
-    }
+  if (permission === 'denied') {
+    return {
+      success: false,
+      error: 'Push-Berechtigung wurde verweigert. Erlaube Benachrichtigungen in den Browser-Einstellungen (Schloss-Symbol in der Adressleiste).',
+    };
+  }
 
-    // Register service worker
-    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+  if (permission !== 'granted') {
+    return { success: false, error: 'Push-Berechtigung wurde nicht erteilt.' };
+  }
 
-    const token = await getToken(messaging, {
+  // Step 4: Get FCM messaging instance
+  let messaging;
+  try {
+    messaging = await getMessagingInstance();
+  } catch (err) {
+    console.error('FCM init failed:', err);
+    return { success: false, error: 'Firebase Messaging konnte nicht initialisiert werden.' };
+  }
+
+  if (!messaging) {
+    return { success: false, error: 'Firebase Messaging wird in diesem Browser nicht unterstützt.' };
+  }
+
+  // Step 5: Register service worker and wait for it to become active
+  let registration: ServiceWorkerRegistration;
+  try {
+    registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    // Wait for SW to be fully active before requesting token
+    await waitForSWActive(registration);
+  } catch (err: any) {
+    console.error('Service Worker registration failed:', err);
+    return {
+      success: false,
+      error: `Service Worker konnte nicht gestartet werden: ${err?.message || 'Unbekannter Fehler'}`,
+    };
+  }
+
+  // Step 6: Get FCM token
+  let token: string;
+  try {
+    token = await getToken(messaging, {
       vapidKey: VAPID_KEY,
       serviceWorkerRegistration: registration,
     });
-
-    if (token) {
-      // Register token server-side via Cloud Function
-      const functions = getFunctions(app, 'us-central1');
-      const registerPushToken = httpsCallable(functions, 'registerPushToken');
-      await registerPushToken({ token });
-
-      // Mark as opted in locally
-      storage.set(PERMISSION_KEY, true);
-      console.log('Push token registered successfully.');
+  } catch (err: any) {
+    console.error('FCM token request failed:', err);
+    const msg = err?.message || '';
+    if (msg.includes('permission denied') || msg.includes('NotAllowed')) {
+      return {
+        success: false,
+        error: 'Push-Berechtigung vom System blockiert. Prüfe: Windows Einstellungen → System → Benachrichtigungen → Browser aktivieren.',
+      };
     }
-
-    return token;
-  } catch (error) {
-    console.error('Failed to set up notifications:', error);
-    return null;
+    if (msg.includes('applicationServerKey')) {
+      return { success: false, error: 'Ungültiger VAPID-Key. Bitte Admin kontaktieren.' };
+    }
+    return {
+      success: false,
+      error: `Push-Token konnte nicht erstellt werden: ${msg || 'Unbekannter Fehler'}`,
+    };
   }
+
+  if (!token) {
+    return { success: false, error: 'Kein Push-Token erhalten. Bitte erneut versuchen.' };
+  }
+
+  // Step 7: Register token server-side
+  try {
+    const functions = getFunctions(app, 'us-central1');
+    const registerPushToken = httpsCallable(functions, 'registerPushToken');
+    await registerPushToken({ token });
+  } catch (err: any) {
+    console.error('Token registration with server failed:', err);
+    return {
+      success: false,
+      error: `Token konnte nicht am Server registriert werden: ${err?.message || 'Netzwerkfehler'}`,
+    };
+  }
+
+  // Success!
+  storage.set(PERMISSION_KEY, true);
+  console.log('Push token registered successfully.');
+  return { success: true };
 }
 
 /**

@@ -95,6 +95,8 @@ async function sendToAll(title, body, data) {
 }
 /**
  * Store a push token (callable from client).
+ * Upserts by userId (logged-in) to ensure one token per user.
+ * Also cleans up any stale tokens for the same user.
  */
 exports.registerPushToken = (0, https_1.onCall)(async (request) => {
     var _a;
@@ -102,15 +104,28 @@ exports.registerPushToken = (0, https_1.onCall)(async (request) => {
     if (!token) {
         throw new https_1.HttpsError('invalid-argument', 'Token is required.');
     }
-    // Upsert token — avoid duplicates
-    const existing = await db.collection('push_tokens').where('token', '==', token).get();
-    if (existing.empty) {
-        await db.collection('push_tokens').add({
-            token,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            userId: ((_a = request.auth) === null || _a === void 0 ? void 0 : _a.uid) || null,
-        });
+    const userId = ((_a = request.auth) === null || _a === void 0 ? void 0 : _a.uid) || null;
+    const batch = db.batch();
+    // If user is logged in, remove all their previous tokens (handles token refresh)
+    if (userId) {
+        const userTokens = await db.collection('push_tokens')
+            .where('userId', '==', userId)
+            .get();
+        userTokens.docs.forEach(doc => batch.delete(doc.ref));
     }
+    // Also remove any existing doc with this exact token (from any user)
+    const exactMatch = await db.collection('push_tokens')
+        .where('token', '==', token)
+        .get();
+    exactMatch.docs.forEach(doc => batch.delete(doc.ref));
+    // Add the new token
+    const newRef = db.collection('push_tokens').doc();
+    batch.set(newRef, {
+        token,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        userId,
+    });
+    await batch.commit();
     return { success: true };
 });
 /**
