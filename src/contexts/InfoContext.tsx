@@ -1,14 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import {
-  doc,
-  onSnapshot,
-  setDoc,
-} from 'firebase/firestore';
-import { db } from '../firebase/firebaseConfig';
 import { TenueData, TenueItem } from '../types/info';
 import { Gemschigrad } from '../types/player';
-
-const DOC_PATH = 'settings/tenue';
+import { listenTenue, saveTenue } from '../storage/repositories/infoRepository';
 
 interface InfoContextType {
   tenueData: TenueData;
@@ -61,10 +54,9 @@ export const InfoProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Real-time listener on a single document
   useEffect(() => {
-    const docRef = doc(db, ...DOC_PATH.split('/') as [string, string]);
-    const unsubscribe = onSnapshot(docRef, (snapshot) => {
-      if (snapshot.exists()) {
-        setTenueData(snapshot.data() as TenueData);
+    const unsubscribe = listenTenue((snapshotData) => {
+      if (snapshotData) {
+        setTenueData(snapshotData);
       }
       // If doc doesn't exist yet, keep defaults
       setLoading(false);
@@ -77,8 +69,7 @@ export const InfoProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   /** Persist the full tenue data to Firestore. */
   const persist = async (data: TenueData) => {
-    const docRef = doc(db, ...DOC_PATH.split('/') as [string, string]);
-    await setDoc(docRef, data);
+    await saveTenue(data);
   };
 
   const addTenueItem = async (gemschigrad: Gemschigrad, text: string) => {

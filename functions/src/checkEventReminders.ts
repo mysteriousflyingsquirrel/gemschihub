@@ -17,6 +17,7 @@ import {
   REMINDER_1D,
   REMINDER_6H,
   REMINDER_1H,
+  EVENT_START,
   EVENT_ICONS,
   fillTemplate,
 } from './notificationMessages';
@@ -65,7 +66,7 @@ function parseEventStartAsUTC(startDate: string, startTime?: string, allDay?: bo
 // ─── Reminder Windows (in minutes) ──────────────────────────────
 
 interface ReminderWindow {
-  type: '1d' | '6h' | '1h';
+  type: '1d' | '6h' | '1h' | 'start';
   minBefore: number; // earliest (larger number = further ahead)
   maxBefore: number; // latest  (smaller number = closer to event)
   template: { title: string; body: string };
@@ -96,6 +97,14 @@ const REMINDER_WINDOWS: ReminderWindow[] = [
     minBefore: 60 + 10,      // 1h10m before
     maxBefore: 60 - 10,      // 50m before (wider: 20 min window)
     template: REMINDER_1H,
+    eventTypes: ['Training', 'Interclub', 'Spirit'],
+  },
+  {
+    type: 'start',
+    // Send once around event start (-5m..+10m to absorb scheduler drift).
+    minBefore: 10,
+    maxBefore: -5,
+    template: EVENT_START,
     eventTypes: ['Training', 'Interclub', 'Spirit'],
   },
 ];

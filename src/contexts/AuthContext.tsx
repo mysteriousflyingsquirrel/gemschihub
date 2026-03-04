@@ -25,8 +25,9 @@ function getCaptainEmails(): string[] {
 function isEmailAdmin(email: string | null): boolean {
   if (!email) return false;
   const allowlist = getCaptainEmails();
-  // If no allowlist configured, fall back to allowing any authenticated user (dev mode)
-  if (allowlist.length === 0) return true;
+  // Keep frontend authorization aligned with Firestore rules:
+  // without an explicit allowlist, no user should be treated as admin.
+  if (allowlist.length === 0) return false;
   return allowlist.includes(email.toLowerCase());
 }
 

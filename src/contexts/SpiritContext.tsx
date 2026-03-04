@@ -1,15 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import {
-  collection,
-  doc,
-  onSnapshot,
-  setDoc,
-} from 'firebase/firestore';
-import { db } from '../firebase/firebaseConfig';
 import { SpiritValue } from '../types/spirit';
 import { useSeasons } from './SeasonsContext';
-
-const COLLECTION = 'spirit';
+import { listenSpirit, upsertSpiritValue } from '../storage/repositories/spiritRepository';
 
 interface SpiritContextType {
   /** All spirit values across all seasons. */
@@ -40,9 +32,7 @@ export const SpiritProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Real-time listener
   useEffect(() => {
-    const colRef = collection(db, COLLECTION);
-    const unsubscribe = onSnapshot(colRef, (snapshot) => {
-      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as SpiritValue));
+    const unsubscribe = listenSpirit((data) => {
       setAllSpirit(data);
       setLoading(false);
     }, (error) => {
@@ -67,14 +57,7 @@ export const SpiritProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const setPlayerSpirit = useCallback(
     async (playerId: string, seasonId: string, value: number) => {
-      const clampedValue = Math.max(0, Math.min(100, value));
-      // Use deterministic doc ID so upserts work naturally
-      const docId = `${playerId}_${seasonId}`;
-      await setDoc(doc(db, COLLECTION, docId), {
-        playerId,
-        seasonId,
-        value: clampedValue,
-      });
+      await upsertSpiritValue(playerId, seasonId, value);
     },
     []
   );

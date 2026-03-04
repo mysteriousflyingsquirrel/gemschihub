@@ -122,7 +122,7 @@ export const Admin: React.FC = () => {
   const { isAdmin } = useAuth();
   const { seasons, addSeason, setActiveSeason, removeSeason, selectedSeasonId } = useSeasons();
   const { events, addEvent, updateEvent, removeEvent } = useEvents();
-  const { players, addPlayer, updatePlayer, removePlayer } = usePlayers();
+  const { players, addPlayer, updatePlayer, uploadPlayerProfilePicture, removePlayer } = usePlayers();
   const { getEventAttendees, setEventAttendance } = useAttendance();
   const { spirit, setPlayerSpirit } = useSpirit();
   const { tenueData, addTenueItem, updateTenueItem, removeTenueItem } = useInfo();
@@ -164,6 +164,8 @@ export const Admin: React.FC = () => {
   const [editPlayerRole, setEditPlayerRole] = useState<PlayerRole>('Spieler');
   const [editPlayerGrad, setEditPlayerGrad] = useState<Gemschigrad>('Gitzi');
   const [editPlayerKlass, setEditPlayerKlass] = useState<Klassierung>('R9');
+  const [editPlayerImageFile, setEditPlayerImageFile] = useState<File | null>(null);
+  const [editPlayerImageUploading, setEditPlayerImageUploading] = useState(false);
   // --- Attendance modal ---
   const [attendanceEventId, setAttendanceEventId] = useState<string | null>(null);
   const [attendanceSelection, setAttendanceSelection] = useState<string[]>([]);
@@ -319,6 +321,8 @@ export const Admin: React.FC = () => {
     setEditPlayerRole(player.role);
     setEditPlayerGrad(player.gemschigrad);
     setEditPlayerKlass(player.klassierung);
+    setEditPlayerImageFile(null);
+    setEditPlayerImageUploading(false);
   };
 
   const handleSavePlayer = async () => {
@@ -330,6 +334,14 @@ export const Admin: React.FC = () => {
       gemschigrad: editPlayerGrad,
       klassierung: editPlayerKlass,
     });
+    if (editPlayerImageFile) {
+      setEditPlayerImageUploading(true);
+      try {
+        await uploadPlayerProfilePicture(editingPlayer.id, editPlayerImageFile);
+      } finally {
+        setEditPlayerImageUploading(false);
+      }
+    }
     setEditingPlayer(null);
   };
 
@@ -702,11 +714,29 @@ export const Admin: React.FC = () => {
                     {klassierungen.map(k => <option key={k} value={k}>{k}</option>)}
                   </select>
                 </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Profilbild</label>
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-gray-100 overflow-hidden flex items-center justify-center text-xs text-gray-500">
+                      {editingPlayer.profilePictureUrl ? (
+                        <img src={editingPlayer.profilePictureUrl} alt={editingPlayer.name} className="w-full h-full object-cover" />
+                      ) : (
+                        'Kein Bild'
+                      )}
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setEditPlayerImageFile(e.target.files?.[0] || null)}
+                      className="block w-full text-sm text-gray-600 file:mr-3 file:px-3 file:py-2 file:rounded file:border-0 file:bg-gray-100 file:text-gray-700"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
             <div className="p-4 border-t flex justify-end gap-3">
               <button onClick={() => setEditingPlayer(null)} className="px-4 py-2 text-gray-700 bg-gray-100 rounded hover:bg-gray-200">Abbrechen</button>
-              <button onClick={handleSavePlayer} disabled={!editPlayerName.trim() || !editPlayerAlias.trim()} className="px-6 py-2 bg-chnebel-red text-white rounded font-semibold hover:bg-[#c4161e] disabled:opacity-50">Speichern</button>
+              <button onClick={handleSavePlayer} disabled={!editPlayerName.trim() || !editPlayerAlias.trim() || editPlayerImageUploading} className="px-6 py-2 bg-chnebel-red text-white rounded font-semibold hover:bg-[#c4161e] disabled:opacity-50">{editPlayerImageUploading ? 'Lade Bild hoch...' : 'Speichern'}</button>
             </div>
           </div>
         </div>

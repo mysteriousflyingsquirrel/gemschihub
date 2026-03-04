@@ -1,0 +1,25 @@
+---
+description: Documentation and specification standards for GemschiHub markdown surfaces.
+globs:
+  - docs/**/*.md
+  - .cursor/**/*.md
+---
+
+# Docs Standards
+
+## Allowed Scope
+- `docs/**/*.md`
+- `.cursor/**/*.md`
+
+## Forbidden Scope
+- Runtime implementation in `src/**` or `functions/**`
+
+## Priorities
+- Keep text concise, explicit, and testable.
+- Align terminology across requirements and specs.
+- Keep acceptance criteria concrete and verifiable.
+- Limit edits to the requested documentation scope.
+
+## Boundary Enforcement
+- Do not implement runtime behavior in docs tasks.
+- If runtime work is needed, hand off to `frontend-gemschi` or `backend-gemschi`.

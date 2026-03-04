@@ -14,6 +14,7 @@
 import * as admin from 'firebase-admin';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { sendToAll } from './send';
+import { requireCaptainEmail } from './auth';
 
 admin.initializeApp();
 
@@ -71,9 +72,7 @@ export const unregisterPushToken = onCall(async (request) => {
  * Send a custom notification to all subscribers (Captain only).
  */
 export const sendNotification = onCall(async (request) => {
-  if (!request.auth) {
-    throw new HttpsError('unauthenticated', 'Authentication required.');
-  }
+  requireCaptainEmail(request.auth);
 
   const { title, body } = request.data as { title: string; body: string };
   if (!title || !body) {
@@ -81,6 +80,33 @@ export const sendNotification = onCall(async (request) => {
   }
 
   return sendToAll(title, body, { type: 'custom' });
+});
+
+/**
+ * Delete a season only when no events still reference it.
+ * Enforces integrity server-side because direct season delete is denied by rules.
+ */
+export const deleteSeason = onCall(async (request) => {
+  requireCaptainEmail(request.auth);
+  const { seasonId } = request.data as { seasonId?: string };
+  if (!seasonId) {
+    throw new HttpsError('invalid-argument', 'seasonId is required.');
+  }
+
+  const events = await db.collection('events')
+    .where('seasonId', '==', seasonId)
+    .limit(1)
+    .get();
+
+  if (!events.empty) {
+    throw new HttpsError(
+      'failed-precondition',
+      'Season cannot be deleted while events exist for this season.'
+    );
+  }
+
+  await db.collection('seasons').doc(seasonId).delete();
+  return { success: true };
 });
 
 // ─── Automated Functions (re-exported) ───────────────────────────

@@ -2,6 +2,14 @@
 
 All specifications for GemschiHub, listed in dependency order.
 
+## Canonical Product Definition
+
+- Canonical sources are:
+  - `docs/requirements/requirements.md`
+  - `docs/specs/*.md`
+- PRD content has been merged into the requirements/specs set.
+- `docs/prd/prd.md` is retired and must not be used as an active source of truth.
+
 | # | Spec | Purpose |
 |---|------|---------|
 | 010 | [spec-010-seasons.md](./spec-010-seasons.md) | Defines seasons as the primary grouping unit for all data |
@@ -14,6 +22,25 @@ All specifications for GemschiHub, listed in dependency order.
 | 080 | [spec-080-nonfunctional.md](./spec-080-nonfunctional.md) | Defines performance, availability, security, and platform support |
 | 090 | [spec-090-authentication.md](./spec-090-authentication.md) | Defines Firebase Auth for Captain login and authorization model |
 | 100 | [spec-100-data-storage.md](./spec-100-data-storage.md) | Defines data persistence, storage abstraction, and integrity rules |
+
+---
+
+## Cross-Cutting Product Baseline
+
+Merged from prior PRD and now governed by requirements/specs:
+
+- Problem context:
+  - Team information must not be fragmented across chat, memory, and ad-hoc sheets.
+  - GemschiHub remains the single source of truth for events, roster, and seasonal results.
+- Product goals:
+  - Public transparency for events, results, and seasonal statistics.
+  - Lower administrative overhead for the Captain.
+  - Preserve Gemschi Spirit in a structured, season-based system.
+- Non-goals:
+  - Monetization, community/social interactions, multi-team support, external league integrations.
+- Delivery boundary:
+  - Best-effort availability is acceptable.
+  - Offline-first behavior is not required.
 
 ---
 

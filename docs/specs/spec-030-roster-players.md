@@ -67,7 +67,7 @@ Player stats are derived from:
 - Interclub match participation and results
 - Spirit value (manual input)
 
-> Exact stat formulas are defined in `spec-060-statistics.md`.
+> Exact stat formulas are defined in `spec-050-statistics.md`.
 
 ---
 

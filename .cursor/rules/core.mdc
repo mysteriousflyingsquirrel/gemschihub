@@ -1,0 +1,31 @@
+---
+description: Core execution discipline for GemschiHub work across docs, frontend, and backend.
+alwaysApply: true
+---
+
+# GemschiHub Core Standards
+
+## Execution Sequence
+1. Read relevant files and constraints before proposing edits.
+2. Clarify scope when ambiguous.
+3. Share a short plan before substantial edits.
+4. Implement in small, focused steps.
+5. Verify with the right checks (lint/tests/manual path).
+6. Report outcomes, risks, and follow-ups.
+
+## Project Constraints
+- Keep scope tight to the user request.
+- Do not change unrelated files or behavior.
+- Surface errors explicitly; avoid silent failure paths.
+- Prefer existing project patterns over style churn.
+- Ask before irreversible or high-risk actions.
+
+## Source-Of-Truth Priority
+- Follow this core rule and `clanker-orchestration.mdc` as the top workflow gates.
+- Use `docs/requirements/requirements.md` and `docs/specs/` as product references.
+- Use `.cursor/commands/verify-gemschi/COMMAND.md` when explicit compliance verification is requested.
+
+## Completion Criteria
+- Requested scope is complete.
+- Verification evidence is provided.
+- Boundaries and constraints were respected.

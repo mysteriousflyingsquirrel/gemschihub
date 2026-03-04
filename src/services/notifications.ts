@@ -14,6 +14,14 @@ export interface NotificationResult {
   error?: string;
 }
 
+function isIosDevice(): boolean {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent);
+}
+
+function isStandalonePwa(): boolean {
+  return window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
+}
+
 /**
  * Check if notifications are supported in the current browser.
  */
@@ -100,6 +108,14 @@ export async function requestAndRegisterNotifications(): Promise<NotificationRes
   // Step 1: Check browser support
   if (!isNotificationSupported()) {
     return { success: false, error: 'Dein Browser unterstützt keine Push-Benachrichtigungen.' };
+  }
+
+  // iOS Web Push requires Home-Screen-installed PWA context.
+  if (isIosDevice() && !isStandalonePwa()) {
+    return {
+      success: false,
+      error: 'Auf iOS funktionieren Push-Benachrichtigungen nur in der installierten PWA (Zum Home-Bildschirm hinzufügen).',
+    };
   }
 
   // Step 2: Check VAPID key

@@ -1,17 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
-  collection,
-  doc,
-  onSnapshot,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  writeBatch,
-} from 'firebase/firestore';
-import { db } from '../firebase/firebaseConfig';
+  activateSeason,
+  createSeason,
+  deleteSeasonSafely,
+  listenSeasons,
+  patchSeason,
+} from '../storage/repositories/seasonsRepository';
 import { Season } from '../types/season';
-
-const COLLECTION = 'seasons';
 
 interface SeasonsContextType {
   seasons: Season[];
@@ -43,9 +38,7 @@ export const SeasonsProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // Real-time listener
   useEffect(() => {
-    const colRef = collection(db, COLLECTION);
-    const unsubscribe = onSnapshot(colRef, (snapshot) => {
-      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Season));
+    const unsubscribe = listenSeasons((data) => {
       setSeasons(data);
 
       // Auto-select active season on first load
@@ -70,32 +63,21 @@ export const SeasonsProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, []);
 
   const addSeason = useCallback(async (name: string): Promise<Season> => {
-    const newData = {
-      name,
-      isActive: false,
-      createdAt: new Date().toISOString(),
-    };
-    const docRef = await addDoc(collection(db, COLLECTION), newData);
-    return { id: docRef.id, ...newData };
+    return createSeason(name);
   }, []);
 
   const updateSeason = useCallback(async (id: string, updates: Partial<Omit<Season, 'id'>>) => {
-    await updateDoc(doc(db, COLLECTION, id), updates);
+    await patchSeason(id, updates);
   }, []);
 
   const setActiveSeason = useCallback(async (id: string) => {
-    // Deactivate all others, activate the chosen one
-    const batch = writeBatch(db);
-    for (const season of seasons) {
-      batch.update(doc(db, COLLECTION, season.id), { isActive: season.id === id });
-    }
-    await batch.commit();
+    await activateSeason(id, seasons);
     // Switch to the newly activated season so downstream contexts reload data
     setSelectedSeasonId(id);
   }, [seasons]);
 
   const removeSeason = useCallback(async (id: string) => {
-    await deleteDoc(doc(db, COLLECTION, id));
+    await deleteSeasonSafely(id);
   }, []);
 
   return (

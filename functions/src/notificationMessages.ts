@@ -42,6 +42,11 @@ export const REMINDER_1H = {
   body: '{time} Uhr — {location}',
 };
 
+export const EVENT_START = {
+  title: '{icon} Jetzt geht es los: {title}',
+  body: '{time} Uhr — {location}',
+};
+
 // ─── Interclub Score Updates ─────────────────────────────────────
 
 export const INTERCLUB_GAME_WON = {

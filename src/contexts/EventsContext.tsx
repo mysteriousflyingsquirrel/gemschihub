@@ -1,24 +1,19 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  collection,
-  doc,
-  onSnapshot,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  deleteField,
-} from 'firebase/firestore';
-import { db } from '../firebase/firebaseConfig';
-import {
   AppEvent,
   createEmptySinglesGames,
   createEmptyDoublesGames,
   calculateTotalScore,
   deriveMatchStatus,
 } from '../types/event';
+import {
+  createEvent,
+  getEventAttendancePlayerIds,
+  listenEvents,
+  patchEvent,
+  removeEventCascade,
+} from '../storage/repositories/eventsRepository';
 import { useSeasons } from './SeasonsContext';
-
-const COLLECTION = 'events';
 
 interface EventsContextType {
   /** All events across all seasons. */
@@ -49,10 +44,9 @@ export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Real-time listener
   useEffect(() => {
-    const colRef = collection(db, COLLECTION);
-    const unsubscribe = onSnapshot(colRef, (snapshot) => {
-      const data = snapshot.docs.map(d => {
-        const raw = d.data() as any;
+    const unsubscribe = listenEvents((incoming) => {
+      const migrated = incoming.map((event) => {
+        const raw = { ...event } as any;
         // Migrate legacy interclub.instagramLink to top-level
         if (raw.interclub?.instagramLink && !raw.instagramLink) {
           raw.instagramLink = raw.interclub.instagramLink;
@@ -75,9 +69,9 @@ export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (raw.allDay === undefined) {
           raw.allDay = !raw.startTime;
         }
-        return { id: d.id, ...raw } as AppEvent;
+        return raw as AppEvent;
       });
-      setAllEvents(data);
+      setAllEvents(migrated);
       setLoading(false);
     }, (error) => {
       console.error('Firestore events listener error:', error);
@@ -104,8 +98,7 @@ export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         totalScore: { ourScore: 0, opponentScore: 0 },
       };
     }
-    const docRef = await addDoc(collection(db, COLLECTION), data);
-    return { id: docRef.id, ...data } as AppEvent;
+    return createEvent(data as Omit<AppEvent, 'id'>);
   }, []);
 
   const updateEvent = useCallback(async (id: string, updates: Partial<AppEvent>) => {
@@ -113,6 +106,25 @@ export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const current = allEvents.find(e => e.id === id);
     if (current && updates.interclub) {
       const merged = { ...current.interclub!, ...updates.interclub };
+
+      // Enforce participation integrity at write path:
+      // only players marked as attending this event may be assigned to games.
+      const assignedPlayers = new Set<string>();
+      (merged.singlesGames || []).forEach((g) => {
+        if (g.playerId) assignedPlayers.add(g.playerId);
+      });
+      (merged.doublesGames || []).forEach((g) => {
+        if (g.player1Id) assignedPlayers.add(g.player1Id);
+        if (g.player2Id) assignedPlayers.add(g.player2Id);
+      });
+      if (assignedPlayers.size > 0) {
+        const attendees = await getEventAttendancePlayerIds(id);
+        const invalid = [...assignedPlayers].filter((pid) => !attendees.has(pid));
+        if (invalid.length > 0) {
+          throw new Error('Nur als anwesend markierte Spieler dürfen Interclub-Spielen zugewiesen werden.');
+        }
+      }
+
       if (updates.interclub.singlesGames || updates.interclub.doublesGames) {
         const singles = merged.singlesGames;
         const doubles = merged.doublesGames;
@@ -122,17 +134,11 @@ export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       updates = { ...updates, interclub: merged };
     }
     // Remove 'id' from updates to avoid writing it as a field
-    const { id: _id, ...cleanUpdates } = updates as AppEvent;
-    // Replace undefined values with deleteField() so Firestore removes them
-    const firestoreUpdates: Record<string, any> = {};
-    for (const [key, value] of Object.entries(cleanUpdates)) {
-      firestoreUpdates[key] = value === undefined ? deleteField() : value;
-    }
-    await updateDoc(doc(db, COLLECTION, id), firestoreUpdates);
+    await patchEvent(id, updates);
   }, [allEvents]);
 
   const removeEvent = useCallback(async (id: string) => {
-    await deleteDoc(doc(db, COLLECTION, id));
+    await removeEventCascade(id);
   }, []);
 
   const getEvent = useCallback(

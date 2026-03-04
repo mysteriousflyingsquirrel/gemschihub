@@ -30,7 +30,7 @@ Optional later (not required):
 There is **exactly one Admin**: the Captain.
 
 Authorization rule:
-- A logged-in user is considered **Admin** only if their email matches the configured **CAPTAIN_EMAIL** allowlist.
+- A logged-in user is considered **Admin** only if their email matches the configured **CAPTAIN_EMAILS** allowlist.
 
 If a user is authenticated but not allowlisted:
 - They are treated as **Public** (no admin access)
@@ -47,7 +47,7 @@ No other roles exist.
 ### Admin Routes
 - Admin functionality is accessible only if:
   - User is authenticated via Firebase Auth, AND
-  - User email matches CAPTAIN_EMAIL
+  - User email matches CAPTAIN_EMAILS
 
 If not authorized:
 - Admin pages must not be accessible.
@@ -104,6 +104,6 @@ This spec does NOT define:
 Implemented when:
 - Public users can use the app without login
 - The Captain can log in via Firebase Auth
-- Admin access is granted only when email matches CAPTAIN_EMAIL
+- Admin access is granted only when email matches CAPTAIN_EMAILS
 - Admin routes and admin writes are blocked for non-admin users
 - Logout returns the app to public mode

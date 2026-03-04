@@ -1,18 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import {
-  collection,
-  doc,
-  onSnapshot,
-  writeBatch,
-  getDocs,
-  query,
-  where,
-} from 'firebase/firestore';
-import { db } from '../firebase/firebaseConfig';
 import { AttendanceRecord } from '../types/attendance';
 import { useSeasons } from './SeasonsContext';
-
-const COLLECTION = 'attendance';
+import {
+  deleteEventAttendance,
+  listenAttendance,
+  replaceEventAttendance,
+} from '../storage/repositories/attendanceRepository';
 
 interface AttendanceContextType {
   /** All attendance across all seasons. */
@@ -47,9 +40,7 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   // Real-time listener
   useEffect(() => {
-    const colRef = collection(db, COLLECTION);
-    const unsubscribe = onSnapshot(colRef, (snapshot) => {
-      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as AttendanceRecord));
+    const unsubscribe = listenAttendance((data) => {
       setAllAttendance(data);
       setLoading(false);
     }, (error) => {
@@ -76,30 +67,13 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const setEventAttendance = useCallback(
     async (eventId: string, seasonId: string, playerIds: string[]) => {
-      // Delete old attendance for this event
-      const q = query(collection(db, COLLECTION), where('eventId', '==', eventId));
-      const existing = await getDocs(q);
-
-      const batch = writeBatch(db);
-      existing.docs.forEach(d => batch.delete(d.ref));
-
-      // Add new records
-      for (const playerId of playerIds) {
-        const newRef = doc(collection(db, COLLECTION));
-        batch.set(newRef, { eventId, seasonId, playerId });
-      }
-
-      await batch.commit();
+      await replaceEventAttendance(eventId, seasonId, playerIds);
     },
     []
   );
 
   const removeEventAttendance = useCallback(async (eventId: string) => {
-    const q = query(collection(db, COLLECTION), where('eventId', '==', eventId));
-    const existing = await getDocs(q);
-    const batch = writeBatch(db);
-    existing.docs.forEach(d => batch.delete(d.ref));
-    await batch.commit();
+    await deleteEventAttendance(eventId);
   }, []);
 
   return (

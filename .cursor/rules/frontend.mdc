@@ -1,0 +1,24 @@
+---
+description: Frontend standards for GemschiHub UI implementation in the React app.
+globs:
+  - src/**
+---
+
+# Frontend Standards
+
+## Allowed Scope
+- `src/**`
+
+## Forbidden Scope
+- `functions/**`
+- `docs/**` (except tiny inline comments in code when needed)
+
+## Priorities
+- Keep UI behavior aligned to accepted specs in `docs/specs/`.
+- Handle loading, error, and empty states explicitly.
+- Preserve accessibility and predictable interactions.
+- Keep UI logic focused; avoid mixing cloud function internals into components.
+
+## Boundary Enforcement
+- If backend behavior must change, hand off to `backend-gemschi`.
+- Keep edits limited to requested frontend surfaces.
