@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   isNotificationSupported,
+  isIosPwaInstallRequired,
   getNotificationPermission,
   hasOptedIn,
   hasSeenPrompt,
@@ -20,6 +21,7 @@ export const NotificationPrompt: React.FC = () => {
     // Show only if: supported, not yet opted in, not yet dismissed, not already denied
     if (
       isNotificationSupported() &&
+      !isIosPwaInstallRequired() &&
       !hasOptedIn() &&
       !hasSeenPrompt() &&
       getNotificationPermission() !== 'denied'

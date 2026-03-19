@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   isNotificationSupported,
+  isIosPwaInstallRequired,
   getNotificationPermission,
   hasOptedIn,
   requestAndRegisterNotifications,
@@ -48,10 +49,15 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ variant = 's
   }, [error]);
 
   const supported = isNotificationSupported();
+  const iosNeedsInstall = isIosPwaInstallRequired();
   const isActive = permission === 'granted' && optedIn;
 
   const handleToggle = useCallback(async () => {
     if (loading) return;
+    if (iosNeedsInstall) {
+      setError('Auf iPhone/iPad zuerst in Safari: Teilen -> Zum Home-Bildschirm. Danach die installierte App öffnen und Push aktivieren.');
+      return;
+    }
     setError(null);
     setLoading(true);
 
@@ -82,12 +88,20 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ variant = 's
     } finally {
       setLoading(false);
     }
-  }, [loading, isActive]);
+  }, [loading, isActive, iosNeedsInstall]);
 
   if (!supported) return null;
 
   // ── Topbar variant (compact) ──
   if (variant === 'topbar') {
+    if (iosNeedsInstall) {
+      return (
+        <div className="p-2.5 rounded-lg text-yellow-300/80" title="iPhone/iPad: Push nur in installierter PWA (Zum Home-Bildschirm)">
+          <BellOffIcon className="w-6 h-6" />
+        </div>
+      );
+    }
+
     if (permission === 'denied') {
       return (
         <div className="p-2.5 rounded-lg text-white/30" title="Push blockiert im Browser">
@@ -130,6 +144,15 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ variant = 's
   }
 
   // ── Sidebar variant (full row) ──
+  if (iosNeedsInstall) {
+    return (
+      <div className="rounded-lg border border-yellow-300/30 bg-yellow-400/10 px-4 py-3 text-xs text-yellow-100 leading-relaxed">
+        Auf iPhone/iPad funktioniert Push nur in der installierten PWA:
+        <span className="block mt-1 text-yellow-200">Safari - Teilen - Zum Home-Bildschirm - App öffnen</span>
+      </div>
+    );
+  }
+
   if (permission === 'denied') {
     return (
       <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-white/30 text-sm">

@@ -28,7 +28,7 @@ function isEmailAdmin(email: string | null): boolean {
   // Keep frontend authorization aligned with Firestore rules:
   // without an explicit allowlist, no user should be treated as admin.
   if (allowlist.length === 0) return false;
-  return allowlist.includes(email.toLowerCase());
+  return allowlist.includes(email.trim().toLowerCase());
 }
 
 export const useAuth = () => {

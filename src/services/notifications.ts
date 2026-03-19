@@ -23,6 +23,13 @@ function isStandalonePwa(): boolean {
 }
 
 /**
+ * iOS web push is available only in Home-Screen-installed PWA mode.
+ */
+export function isIosPwaInstallRequired(): boolean {
+  return isIosDevice() && !isStandalonePwa();
+}
+
+/**
  * Check if notifications are supported in the current browser.
  */
 export function isNotificationSupported(): boolean {
@@ -111,7 +118,7 @@ export async function requestAndRegisterNotifications(): Promise<NotificationRes
   }
 
   // iOS Web Push requires Home-Screen-installed PWA context.
-  if (isIosDevice() && !isStandalonePwa()) {
+  if (isIosPwaInstallRequired()) {
     return {
       success: false,
       error: 'Auf iOS funktionieren Push-Benachrichtigungen nur in der installierten PWA (Zum Home-Bildschirm hinzufügen).',

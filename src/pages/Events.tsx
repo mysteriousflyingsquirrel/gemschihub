@@ -124,7 +124,12 @@ export const Events: React.FC = () => {
                   <td className="px-6 py-4 text-chnebel-black font-medium">
                     <div className="flex items-center gap-2">
                       <span className="text-xl">{getEventTypeIcon(event.type)}</span>
-                      {event.title}
+                      <span className="truncate">{event.title}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-chnebel-black">
+                    <div className="flex items-center gap-2">
+                      <span>{event.location || '-'}</span>
                       {isNext && (
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-chnebel-red text-white uppercase tracking-wide">
                           Next
@@ -132,7 +137,6 @@ export const Events: React.FC = () => {
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-chnebel-black">{event.location || '-'}</td>
                   <td className="px-6 py-4">
                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusBadge.color}`}>
                       {statusBadge.text}
@@ -154,7 +158,7 @@ export const Events: React.FC = () => {
             })}
             {filteredEvents.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={activeTab === 'all' || activeTab === 'Interclub' ? 5 : 4} className="px-6 py-8 text-center text-gray-500">
                   Keine Events in dieser Saison
                 </td>
               </tr>
@@ -187,32 +191,34 @@ export const Events: React.FC = () => {
                     : 'border-gray-200'
               }`}
             >
-              {/* Row 1: Icon + Name */}
+              {/* Row 0: Icon + Name */}
               <div className="flex items-center gap-2 min-w-0 mb-1">
                 <span className="text-xl flex-shrink-0">{getEventTypeIcon(event.type)}</span>
                 <span className="font-medium text-chnebel-black truncate">{event.title}</span>
-                {isNext && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-chnebel-red text-white uppercase tracking-wide flex-shrink-0">
-                    Next
-                  </span>
-                )}
               </div>
-              {/* Row 2: Date + Status */}
+              {/* Row 1: Date + Status */}
               <div className="flex items-center justify-between gap-2 mb-1 text-sm text-gray-600">
                 <span>{formatEventDateDisplay(event)}</span>
                 <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${statusBadge.color}`}>
                   {statusBadge.text}
                 </span>
               </div>
-              {/* Row 3: Location + Score */}
+              {/* Row 2: Location + Score */}
               <div className="flex items-center justify-between gap-2 text-sm text-gray-600">
-                <span>{event.location ? `📍 ${event.location}` : ''}</span>
+                <span className="truncate">{event.location ? `📍 ${event.location}` : '-'}</span>
                 {event.interclub ? (
                   <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getScoreColor(event.interclub.totalScore.ourScore, event.interclub.totalScore.opponentScore)}`}>
                     {event.interclub.totalScore.ourScore}:{event.interclub.totalScore.opponentScore}
                   </span>
                 ) : null}
               </div>
+              {isNext && (
+                <div className="mt-2">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-chnebel-red text-white uppercase tracking-wide">
+                    Next
+                  </span>
+                </div>
+              )}
             </div>
           );
         })}
@@ -271,6 +277,18 @@ export const Events: React.FC = () => {
                         </div>
                       );
                     })()}
+                  </section>
+
+                  {/* Opponent detail */}
+                  <section className="mb-6">
+                    <div className="bg-chnebel-red px-4 py-2 rounded-lg mb-3">
+                      <h3 className="text-sm font-bold text-white tracking-wide">Gegner</h3>
+                    </div>
+                    <div className="bg-chnebel-gray rounded-lg p-4">
+                      <span className="font-semibold text-chnebel-black">
+                        {selectedEvent.interclub.opponent || 'Nicht erfasst'}
+                      </span>
+                    </div>
                   </section>
 
                   {/* Total Score */}

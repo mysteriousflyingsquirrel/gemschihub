@@ -1,39 +1,13 @@
 import React from 'react';
 import { PageTitle } from '../components/PageTitle';
 import { SectionTitle } from '../components/SectionTitle';
-import { useStatistics } from '../hooks/useStatistics';
 
 export const Verfassung: React.FC = () => {
-  const { teamStats } = useStatistics();
-
   return (
     <>
       <PageTitle>Verfassung</PageTitle>
 
       <div className="space-y-8 text-chnebel-black leading-relaxed">
-
-        {/* Team statistics */}
-        <section className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <SectionTitle>Team Statistik (Saison)</SectionTitle>
-          <div className="p-6 grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="bg-chnebel-gray rounded-lg p-4">
-              <div className="text-xs text-gray-500">Spiele</div>
-              <div className="text-2xl font-bold">{teamStats.matchesPlayed}</div>
-            </div>
-            <div className="bg-chnebel-gray rounded-lg p-4">
-              <div className="text-xs text-gray-500">Siege / Niederlagen</div>
-              <div className="text-2xl font-bold">{teamStats.matchesWon} / {teamStats.matchesLost}</div>
-            </div>
-            <div className="bg-chnebel-gray rounded-lg p-4">
-              <div className="text-xs text-gray-500">Interclub Punkte</div>
-              <div className="text-2xl font-bold">{teamStats.totalOurPoints}:{teamStats.totalOpponentPoints}</div>
-            </div>
-            <div className="bg-chnebel-gray rounded-lg p-4">
-              <div className="text-xs text-gray-500">Ø Gemschi Score</div>
-              <div className="text-2xl font-bold">{teamStats.averageGemschiScore.toFixed(1)}%</div>
-            </div>
-          </div>
-        </section>
 
         {/* Geschichte */}
         <section className="bg-white rounded-lg shadow-sm overflow-hidden">
