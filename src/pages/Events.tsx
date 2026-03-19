@@ -122,9 +122,16 @@ export const Events: React.FC = () => {
                 >
                   <td className="px-6 py-4 text-chnebel-black">{formatEventDateDisplay(event)}</td>
                   <td className="px-6 py-4 text-chnebel-black font-medium">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl">{getEventTypeIcon(event.type)}</span>
-                      <span className="truncate">{event.title}</span>
+                    <div className="flex items-start gap-2">
+                      <span className="text-xl pt-0.5">{getEventTypeIcon(event.type)}</span>
+                      <div className="min-w-0">
+                        <div className="truncate">{event.title}</div>
+                        {event.type === 'Interclub' && event.interclub && (
+                          <div className="text-xs text-gray-500 truncate">
+                            vs {event.interclub.opponent || 'Gegner'}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-chnebel-black">
@@ -192,9 +199,16 @@ export const Events: React.FC = () => {
               }`}
             >
               {/* Row 0: Icon + Name */}
-              <div className="flex items-center gap-2 min-w-0 mb-1">
-                <span className="text-xl flex-shrink-0">{getEventTypeIcon(event.type)}</span>
-                <span className="font-medium text-chnebel-black truncate">{event.title}</span>
+              <div className="flex items-start gap-2 min-w-0 mb-1">
+                <span className="text-xl flex-shrink-0 pt-0.5">{getEventTypeIcon(event.type)}</span>
+                <div className="min-w-0">
+                  <div className="font-medium text-chnebel-black truncate">{event.title}</div>
+                  {event.type === 'Interclub' && event.interclub && (
+                    <div className="text-xs text-gray-500 truncate">
+                      vs {event.interclub.opponent || 'Gegner'}
+                    </div>
+                  )}
+                </div>
               </div>
               {/* Row 1: Date + Status */}
               <div className="flex items-center justify-between gap-2 mb-1 text-sm text-gray-600">
