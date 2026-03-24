@@ -108,6 +108,14 @@ const REMINDER_WINDOWS = [
         template: notificationMessages_1.REMINDER_1H,
         eventTypes: ['Training', 'Interclub', 'Spirit'],
     },
+    {
+        type: 'start',
+        // Send once around event start (-5m..+10m to absorb scheduler drift).
+        minBefore: 10,
+        maxBefore: -5,
+        template: notificationMessages_1.EVENT_START,
+        eventTypes: ['Training', 'Interclub', 'Spirit'],
+    },
 ];
 // Default start time for all-day events
 const DEFAULT_TIME = '09:00';
@@ -184,7 +192,7 @@ exports.checkEventReminders = (0, scheduler_1.onSchedule)({ schedule: 'every 5 m
             };
             const { title, body } = (0, notificationMessages_1.fillTemplate)(window.template, values);
             console.log(`[Reminders] Sending ${window.type} reminder for "${event.title}" (${eventId}): "${title}" / "${body}"`);
-            await (0, send_1.sendToAll)(title, body, { type: 'reminder', eventId });
+            await (0, send_1.sendToAll)(title, body, { type: 'reminder', eventId }, { type: 'reminder', eventId });
             await markAsSent(eventId, window.type);
         }
     }

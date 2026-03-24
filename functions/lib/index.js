@@ -45,10 +45,11 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onEventUpdated = exports.checkEventReminders = exports.sendNotification = exports.unregisterPushToken = exports.registerPushToken = void 0;
+exports.cleanupOldNotifications = exports.onEventUpdated = exports.checkEventReminders = exports.deleteSeason = exports.sendNotification = exports.unregisterPushToken = exports.registerPushToken = void 0;
 const admin = __importStar(require("firebase-admin"));
 const https_1 = require("firebase-functions/v2/https");
 const send_1 = require("./send");
+const auth_1 = require("./auth");
 admin.initializeApp();
 const db = admin.firestore();
 // ─── Callable Functions ──────────────────────────────────────────
@@ -94,18 +95,38 @@ exports.unregisterPushToken = (0, https_1.onCall)(async (request) => {
  * Send a custom notification to all subscribers (Captain only).
  */
 exports.sendNotification = (0, https_1.onCall)(async (request) => {
-    if (!request.auth) {
-        throw new https_1.HttpsError('unauthenticated', 'Authentication required.');
-    }
+    (0, auth_1.requireCaptainEmail)(request.auth);
     const { title, body } = request.data;
     if (!title || !body) {
         throw new https_1.HttpsError('invalid-argument', 'Title and body are required.');
     }
-    return (0, send_1.sendToAll)(title, body, { type: 'custom' });
+    return (0, send_1.sendToAll)(title, body, { type: 'custom' }, { type: 'custom' });
+});
+/**
+ * Delete a season only when no events still reference it.
+ * Enforces integrity server-side because direct season delete is denied by rules.
+ */
+exports.deleteSeason = (0, https_1.onCall)(async (request) => {
+    (0, auth_1.requireCaptainEmail)(request.auth);
+    const { seasonId } = request.data;
+    if (!seasonId) {
+        throw new https_1.HttpsError('invalid-argument', 'seasonId is required.');
+    }
+    const events = await db.collection('events')
+        .where('seasonId', '==', seasonId)
+        .limit(1)
+        .get();
+    if (!events.empty) {
+        throw new https_1.HttpsError('failed-precondition', 'Season cannot be deleted while events exist for this season.');
+    }
+    await db.collection('seasons').doc(seasonId).delete();
+    return { success: true };
 });
 // ─── Automated Functions (re-exported) ───────────────────────────
 var checkEventReminders_1 = require("./checkEventReminders");
 Object.defineProperty(exports, "checkEventReminders", { enumerable: true, get: function () { return checkEventReminders_1.checkEventReminders; } });
 var onEventUpdated_1 = require("./onEventUpdated");
 Object.defineProperty(exports, "onEventUpdated", { enumerable: true, get: function () { return onEventUpdated_1.onEventUpdated; } });
+var cleanupOldNotifications_1 = require("./cleanupOldNotifications");
+Object.defineProperty(exports, "cleanupOldNotifications", { enumerable: true, get: function () { return cleanupOldNotifications_1.cleanupOldNotifications; } });
 //# sourceMappingURL=index.js.map

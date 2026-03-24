@@ -2,6 +2,7 @@
  * GemschiHub — Shared push notification sender
  *
  * Used by index.ts (manual send), checkEventReminders.ts, and onEventUpdated.ts.
+ * Also persists notifications to Firestore for the in-app notification inbox.
  */
 
 import * as admin from 'firebase-admin';
@@ -9,6 +10,34 @@ import * as admin from 'firebase-admin';
 /** Lazy accessor — avoids calling firestore() before initializeApp(). */
 function getDb() {
   return admin.firestore();
+}
+
+/** Notification metadata for persistence. */
+export interface NotificationMetadata {
+  type: 'reminder' | 'interclub_game' | 'interclub_final' | 'custom';
+  eventId?: string;
+  gameNumber?: number;
+}
+
+/**
+ * Persist a notification to Firestore for the in-app inbox.
+ */
+async function saveNotification(
+  title: string,
+  body: string,
+  metadata: NotificationMetadata
+): Promise<void> {
+  const doc: Record<string, unknown> = {
+    type: metadata.type,
+    title,
+    body,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
+  if (metadata.eventId) doc.eventId = metadata.eventId;
+  if (metadata.gameNumber !== undefined) doc.gameNumber = metadata.gameNumber;
+
+  await getDb().collection('notifications').add(doc);
+  console.log(`[Send] Notification persisted: ${metadata.type}`);
 }
 
 /**
@@ -21,12 +50,14 @@ async function getAllTokens(): Promise<string[]> {
 
 /**
  * Send a data-only notification to all subscribed devices.
+ * Also persists the notification to Firestore for the in-app inbox.
  * Returns success/failure counts.
  */
 export async function sendToAll(
   title: string,
   body: string,
-  data?: Record<string, string>
+  data?: Record<string, string>,
+  metadata?: NotificationMetadata
 ): Promise<{ success: number; failure: number }> {
   const tokens = await getAllTokens();
   if (tokens.length === 0) {
@@ -65,5 +96,15 @@ export async function sendToAll(
   }
 
   console.log(`[Send] Sent: ${response.successCount} success, ${response.failureCount} failure.`);
+
+  // Persist notification to Firestore for in-app inbox
+  if (metadata) {
+    try {
+      await saveNotification(title, body, metadata);
+    } catch (err) {
+      console.error('[Send] Failed to persist notification:', err);
+    }
+  }
+
   return { success: response.successCount, failure: response.failureCount };
 }

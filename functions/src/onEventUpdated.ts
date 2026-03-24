@@ -109,7 +109,7 @@ export const onEventUpdated = onDocumentUpdated(
       });
 
       console.log(`[InterclubScore] Final score for ${eventId}: ${ourScore}:${opponentScore}`);
-      await sendToAll(title, body, { type: 'interclub_final', eventId });
+      await sendToAll(title, body, { type: 'interclub_final', eventId }, { type: 'interclub_final', eventId });
       // Don't also send individual game updates when match completes
       return;
     }
@@ -140,11 +140,12 @@ export const onEventUpdated = onDocumentUpdated(
         });
 
         console.log(`[InterclubScore] Game ${gameAfter.gameNumber} completed for ${eventId}: ${winner}`);
-        await sendToAll(title, body, {
-          type: 'interclub_score',
-          eventId,
-          gameNumber: String(gameAfter.gameNumber),
-        });
+        await sendToAll(
+          title,
+          body,
+          { type: 'interclub_score', eventId, gameNumber: String(gameAfter.gameNumber) },
+          { type: 'interclub_game', eventId, gameNumber: gameAfter.gameNumber }
+        );
       }
     }
   }

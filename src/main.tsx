@@ -8,6 +8,7 @@ import { PlayersProvider } from './contexts/PlayersContext.tsx'
 import { AttendanceProvider } from './contexts/AttendanceContext.tsx'
 import { SpiritProvider } from './contexts/SpiritContext.tsx'
 import { InfoProvider } from './contexts/InfoContext.tsx'
+import { NotificationsProvider } from './contexts/NotificationsContext.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary.tsx'
 import './index.css'
 
@@ -27,7 +28,9 @@ ReactDOM.createRoot(rootElement).render(
               <AttendanceProvider>
                 <SpiritProvider>
                   <InfoProvider>
-                    <App />
+                    <NotificationsProvider>
+                      <App />
+                    </NotificationsProvider>
                   </InfoProvider>
                 </SpiritProvider>
               </AttendanceProvider>

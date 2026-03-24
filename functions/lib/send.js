@@ -3,6 +3,7 @@
  * GemschiHub — Shared push notification sender
  *
  * Used by index.ts (manual send), checkEventReminders.ts, and onEventUpdated.ts.
+ * Also persists notifications to Firestore for the in-app notification inbox.
  */
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -45,6 +46,23 @@ function getDb() {
     return admin.firestore();
 }
 /**
+ * Persist a notification to Firestore for the in-app inbox.
+ */
+async function saveNotification(title, body, metadata) {
+    const doc = {
+        type: metadata.type,
+        title,
+        body,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+    if (metadata.eventId)
+        doc.eventId = metadata.eventId;
+    if (metadata.gameNumber !== undefined)
+        doc.gameNumber = metadata.gameNumber;
+    await getDb().collection('notifications').add(doc);
+    console.log(`[Send] Notification persisted: ${metadata.type}`);
+}
+/**
  * Get all stored FCM tokens from Firestore.
  */
 async function getAllTokens() {
@@ -53,9 +71,10 @@ async function getAllTokens() {
 }
 /**
  * Send a data-only notification to all subscribed devices.
+ * Also persists the notification to Firestore for the in-app inbox.
  * Returns success/failure counts.
  */
-async function sendToAll(title, body, data) {
+async function sendToAll(title, body, data, metadata) {
     const tokens = await getAllTokens();
     if (tokens.length === 0) {
         console.log('[Send] No tokens to send to.');
@@ -90,6 +109,15 @@ async function sendToAll(title, body, data) {
         console.log(`[Send] Cleaned up ${invalidTokens.length} invalid token(s).`);
     }
     console.log(`[Send] Sent: ${response.successCount} success, ${response.failureCount} failure.`);
+    // Persist notification to Firestore for in-app inbox
+    if (metadata) {
+        try {
+            await saveNotification(title, body, metadata);
+        }
+        catch (err) {
+            console.error('[Send] Failed to persist notification:', err);
+        }
+    }
     return { success: response.successCount, failure: response.failureCount };
 }
 //# sourceMappingURL=send.js.map

@@ -19,7 +19,7 @@
  *   {result}     — Final result word ("gewonnen!" / "verloren" / "unentschieden")
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.INTERCLUB_FINAL_LOST = exports.INTERCLUB_FINAL_WON = exports.INTERCLUB_GAME_LOST = exports.INTERCLUB_GAME_WON = exports.REMINDER_1H = exports.REMINDER_6H = exports.REMINDER_1D = exports.EVENT_ICONS = void 0;
+exports.INTERCLUB_FINAL_LOST = exports.INTERCLUB_FINAL_WON = exports.INTERCLUB_GAME_LOST = exports.INTERCLUB_GAME_WON = exports.EVENT_START = exports.REMINDER_1H = exports.REMINDER_6H = exports.REMINDER_1D = exports.EVENT_ICONS = void 0;
 exports.fillTemplate = fillTemplate;
 // ─── Event Type Icons ────────────────────────────────────────────
 exports.EVENT_ICONS = {
@@ -40,6 +40,10 @@ exports.REMINDER_1H = {
     title: '{icon} In 1 Stunde: {title}',
     body: '{time} Uhr — {location}',
 };
+exports.EVENT_START = {
+    title: '{icon} Jetzt geht es los: {title}',
+    body: '{time} Uhr — {location}',
+};
 // ─── Interclub Score Updates ─────────────────────────────────────
 exports.INTERCLUB_GAME_WON = {
     title: '🏆 {title}',
@@ -50,12 +54,12 @@ exports.INTERCLUB_GAME_LOST = {
     body: 'Irgend e Pfiffa het z {gameLabel} verlore! Stand: {ourScore}:{oppScore}',
 };
 exports.INTERCLUB_FINAL_WON = {
-    title: '🏆 {title} — Sieg! 🎉',
-    body: '{ourScore}:{oppScore} — Geile Scheisse, gwunne!',
+    title: '🏆 {title} - Sieg! 🎉',
+    body: '{ourScore}:{oppScore} - Ab id Möscht!',
 };
 exports.INTERCLUB_FINAL_LOST = {
-    title: '🏆 {title} — Niederlage',
-    body: '{ourScore}:{oppScore} — Nächstes Mal packe mers!',
+    title: '🏆 {title} - Niederlage',
+    body: '{ourScore}:{oppScore} - No bueno bro!',
 };
 // ─── Helper: Fill placeholders ───────────────────────────────────
 function fillTemplate(template, values) {
