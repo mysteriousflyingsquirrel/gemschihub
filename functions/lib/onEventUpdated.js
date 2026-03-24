@@ -69,7 +69,7 @@ exports.onEventUpdated = (0, firestore_1.onDocumentUpdated)('events/{eventId}', 
             oppScore: String(opponentScore),
         });
         console.log(`[InterclubScore] Final score for ${eventId}: ${ourScore}:${opponentScore}`);
-        await (0, send_1.sendToAll)(title, body, { type: 'interclub_final', eventId });
+        await (0, send_1.sendToAll)(title, body, { type: 'interclub_final', eventId }, { type: 'interclub_final', eventId });
         // Don't also send individual game updates when match completes
         return;
     }
@@ -94,11 +94,7 @@ exports.onEventUpdated = (0, firestore_1.onDocumentUpdated)('events/{eventId}', 
                 oppScore: String(opponentScore),
             });
             console.log(`[InterclubScore] Game ${gameAfter.gameNumber} completed for ${eventId}: ${winner}`);
-            await (0, send_1.sendToAll)(title, body, {
-                type: 'interclub_score',
-                eventId,
-                gameNumber: String(gameAfter.gameNumber),
-            });
+            await (0, send_1.sendToAll)(title, body, { type: 'interclub_score', eventId, gameNumber: String(gameAfter.gameNumber) }, { type: 'interclub_game', eventId, gameNumber: gameAfter.gameNumber });
         }
     }
 });

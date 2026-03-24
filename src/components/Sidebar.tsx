@@ -1,8 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { SeasonSelector } from './SeasonSelector';
 import { NotificationBell } from './NotificationBell';
+import { NotificationInboxIcon } from './NotificationInboxIcon';
+import { NotificationInbox } from './NotificationInbox';
 import logo from '../assets/chnebel-logo-transparent.png';
 
 interface SidebarProps {
@@ -14,11 +16,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileMenuOpen, onMobileMenu
   const { user, isAdmin, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [isInboxOpen, setIsInboxOpen] = useState(false);
 
   const handleLogout = async () => {
     await logout();
     navigate('/');
   };
+
+  const handleInboxToggle = useCallback(() => {
+    setIsInboxOpen((prev) => !prev);
+  }, []);
+
+  const handleInboxClose = useCallback(() => {
+    setIsInboxOpen(false);
+  }, []);
 
   const menuItems = [
     { path: '/info', label: 'Info', icon: 'ℹ️' },
@@ -87,6 +98,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileMenuOpen, onMobileMenu
         {/* Notification opt-in */}
         <div className="px-3 pt-2 pb-1">
           <NotificationBell />
+        </div>
+
+        {/* Notification inbox */}
+        <div className="px-3 pb-2 relative">
+          <NotificationInboxIcon
+            onClick={handleInboxToggle}
+            isOpen={isInboxOpen}
+            variant="sidebar"
+          />
+          <NotificationInbox
+            isOpen={isInboxOpen}
+            onClose={handleInboxClose}
+            variant="sidebar"
+          />
         </div>
 
         {/* Season Selector */}

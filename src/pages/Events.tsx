@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { PageTitle } from '../components/PageTitle';
 import { useEvents } from '../contexts/EventsContext';
 import { usePlayers } from '../contexts/PlayersContext';
@@ -46,11 +47,38 @@ const getMatchStatusBadge = (status: string) => {
 };
 
 export const Events: React.FC = () => {
-  const { events } = useEvents();
+  const { events, getEvent } = useEvents();
   const { getPlayer } = usePlayers();
   const { getEventAttendees } = useAttendance();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedEvent, setSelectedEvent] = useState<AppEvent | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'Interclub' | 'Training' | 'Spirit'>('all');
+  const [highlightedEventId, setHighlightedEventId] = useState<string | null>(null);
+  const highlightedRef = useRef<HTMLTableRowElement | HTMLDivElement>(null);
+
+  // Handle highlight query parameter
+  useEffect(() => {
+    const highlightId = searchParams.get('highlight');
+    if (highlightId) {
+      const event = getEvent(highlightId);
+      if (event) {
+        setHighlightedEventId(highlightId);
+        setActiveTab('all');
+        setSelectedEvent(event);
+        setSearchParams({}, { replace: true });
+        setTimeout(() => setHighlightedEventId(null), 3000);
+      } else {
+        setSearchParams({}, { replace: true });
+      }
+    }
+  }, [searchParams, getEvent, setSearchParams]);
+
+  // Scroll to highlighted event
+  useEffect(() => {
+    if (highlightedEventId && highlightedRef.current) {
+      highlightedRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [highlightedEventId]);
 
   const filteredEvents = useMemo(() => {
     const filtered = activeTab === 'all' ? events : events.filter(e => e.type === activeTab);
@@ -108,16 +136,20 @@ export const Events: React.FC = () => {
               const statusBadge = getStatusBadge(status);
               const isNext = event.id === nextEventId;
               const liveToday = isEventToday(event);
+              const isHighlighted = event.id === highlightedEventId;
               return (
                 <tr
                   key={event.id}
+                  ref={isHighlighted ? highlightedRef as React.RefObject<HTMLTableRowElement> : undefined}
                   onClick={() => setSelectedEvent(event)}
                   className={`border-b border-gray-200 transition-colors cursor-pointer ${
-                    liveToday
-                      ? 'bg-green-50 border-l-4 border-l-green-500 hover:bg-green-100 font-semibold'
-                      : isNext
-                        ? 'bg-chnebel-red/10 border-l-4 border-l-chnebel-red hover:bg-chnebel-red/20 font-semibold'
-                        : 'hover:bg-chnebel-gray/50'
+                    isHighlighted
+                      ? 'bg-yellow-100 border-l-4 border-l-yellow-500 animate-pulse'
+                      : liveToday
+                        ? 'bg-green-50 border-l-4 border-l-green-500 hover:bg-green-100 font-semibold'
+                        : isNext
+                          ? 'bg-chnebel-red/10 border-l-4 border-l-chnebel-red hover:bg-chnebel-red/20 font-semibold'
+                          : 'hover:bg-chnebel-gray/50'
                   }`}
                 >
                   <td className="px-6 py-4 text-chnebel-black">{formatEventDateDisplay(event)}</td>
@@ -186,16 +218,20 @@ export const Events: React.FC = () => {
           const statusBadge = getStatusBadge(status);
           const isNext = event.id === nextEventId;
           const liveToday = isEventToday(event);
+          const isHighlighted = event.id === highlightedEventId;
           return (
             <div
               key={event.id}
+              ref={isHighlighted ? highlightedRef as React.RefObject<HTMLDivElement> : undefined}
               onClick={() => setSelectedEvent(event)}
               className={`bg-white rounded-lg shadow-sm border-2 p-4 cursor-pointer active:scale-[0.98] transition-all ${
-                liveToday
-                  ? 'event-live bg-green-50/50'
-                  : isNext
-                    ? 'border-chnebel-red bg-chnebel-red/5'
-                    : 'border-gray-200'
+                isHighlighted
+                  ? 'border-yellow-500 bg-yellow-50 animate-pulse'
+                  : liveToday
+                    ? 'event-live bg-green-50/50'
+                    : isNext
+                      ? 'border-chnebel-red bg-chnebel-red/5'
+                      : 'border-gray-200'
               }`}
             >
               {/* Row 0: Icon + Name */}

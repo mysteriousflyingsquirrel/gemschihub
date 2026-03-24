@@ -79,7 +79,7 @@ export const sendNotification = onCall(async (request) => {
     throw new HttpsError('invalid-argument', 'Title and body are required.');
   }
 
-  return sendToAll(title, body, { type: 'custom' });
+  return sendToAll(title, body, { type: 'custom' }, { type: 'custom' });
 });
 
 /**
@@ -113,3 +113,4 @@ export const deleteSeason = onCall(async (request) => {
 
 export { checkEventReminders } from './checkEventReminders';
 export { onEventUpdated } from './onEventUpdated';
+export { cleanupOldNotifications } from './cleanupOldNotifications';

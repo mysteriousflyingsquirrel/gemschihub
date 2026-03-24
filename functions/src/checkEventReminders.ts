@@ -204,7 +204,7 @@ export const checkEventReminders = onSchedule(
         const { title, body } = fillTemplate(window.template, values);
 
         console.log(`[Reminders] Sending ${window.type} reminder for "${event.title}" (${eventId}): "${title}" / "${body}"`);
-        await sendToAll(title, body, { type: 'reminder', eventId });
+        await sendToAll(title, body, { type: 'reminder', eventId }, { type: 'reminder', eventId });
         await markAsSent(eventId, window.type);
       }
     }

@@ -63,6 +63,12 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    match /notifications/{id} {
+      // Public read for in-app notification inbox; backend writes via Admin SDK.
+      allow read: if true;
+      allow write: if false;
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write: if false;
