@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { AdminRoute } from './components/ProtectedRoute';
+import { ScrollToTop } from './components/ScrollToTop';
 import { Login } from './pages/Login';
 import { Info } from './pages/Info';
 import { Events } from './pages/Events';
@@ -12,6 +13,7 @@ import { Admin } from './pages/Admin';
 function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
         {/* Auth route */}
         <Route path="/login" element={<Login />} />
