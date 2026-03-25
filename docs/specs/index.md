@@ -91,6 +91,7 @@ Merged from prior PRD and now governed by requirements/specs:
 - [ ] Interclub live updates trigger notifications
 - [ ] Notifications respect platform constraints (iOS PWA)
 - [ ] FCM integration is functional
+- [ ] App updates can be applied without reinstall (Android + iOS PWA)
 
 ### spec-070-admin-management
 - [ ] Captain can manage all mutable data
@@ -102,6 +103,7 @@ Merged from prior PRD and now governed by requirements/specs:
 - [ ] Data persists correctly across reloads
 - [ ] Admin access is protected
 - [ ] Notifications respect platform constraints
+- [ ] PWA updates are delivered without reinstall when a new version is deployed
 
 ### spec-090-authentication
 - [ ] Public users can use the app without login

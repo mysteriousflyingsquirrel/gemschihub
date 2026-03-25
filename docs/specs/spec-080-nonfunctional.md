@@ -67,6 +67,8 @@ Advanced security topics (rate limiting, encryption at rest, etc.) are out of sc
   - Android browser Web Push requirements
   - iOS PWA Web Push limitations (iOS 16.4+)
 - Notification delivery is best-effort.
+- PWA application updates should become available without reinstall, including iOS PWA.
+- If a service-worker-controlled update is waiting, the app should expose an in-app update prompt.
 
 ---
 

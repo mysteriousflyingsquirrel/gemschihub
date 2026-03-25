@@ -8,6 +8,7 @@ const PERMISSION_KEY = 'gemschihub_push_permission';
 const DISMISSED_KEY = 'gemschihub_push_dismissed';
 const TOKEN_KEY = 'gemschihub_push_token';
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY || '';
+const FIREBASE_MESSAGING_SW_PATH = '/firebase-sw/firebase-messaging-sw.js';
 
 export interface NotificationResult {
   success: boolean;
@@ -167,7 +168,7 @@ export async function requestAndRegisterNotifications(): Promise<NotificationRes
   // Step 5: Register service worker and wait for it to become active
   let registration: ServiceWorkerRegistration;
   try {
-    await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    await navigator.serviceWorker.register(FIREBASE_MESSAGING_SW_PATH);
     registration = await waitForSWReady();
   } catch (err: any) {
     console.error('Service Worker registration failed:', err);
