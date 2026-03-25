@@ -90,6 +90,10 @@ Each player profile includes:
 - Name
 - Nickname (Alias)
 - Role (Spieler, Captain, CEO of Patchio)
+- MVG distinction (computed automatically from the highest Gemschi Score in the selected season)
+- MVG label format: `MVG of <selected season year>`
+- If multiple players share the exact highest Gemschi Score, all of them are MVG
+- If the highest Gemschi Score is `0`, no MVG is shown
 - Gemschigrad
 - Klassierung
 - Short introduction text

@@ -31,7 +31,7 @@ const getScoreColor = (score: number): string => {
 
 export const Spieler: React.FC = () => {
   const { players } = usePlayers();
-  const { getPlayerStats } = useStatistics();
+  const { getPlayerStats, isMvgPlayer, mvgLabel } = useStatistics();
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
 
   const sortedPlayers = useMemo(() => {
@@ -90,8 +90,12 @@ export const Spieler: React.FC = () => {
                         <span className="flex items-center gap-2">
                           {player.name}
                           {getRoleEmoji(player.role) && <span className="text-yellow-500">{getRoleEmoji(player.role)}</span>}
+                          {isMvgPlayer(player.id) && <span className="text-amber-500">💎</span>}
                           {player.role !== 'Spieler' && (
                             <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-yellow-100 text-yellow-800">{player.role}</span>
+                          )}
+                          {isMvgPlayer(player.id) && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">{mvgLabel}</span>
                           )}
                         </span>
                         {player.alias && <span className="text-sm text-gray-500 italic">"{player.alias}"</span>}
@@ -147,8 +151,12 @@ export const Spieler: React.FC = () => {
                   <div className="flex items-center gap-2 font-medium text-chnebel-black flex-wrap">
                     {player.name}
                     {getRoleEmoji(player.role) && <span className="text-yellow-500">{getRoleEmoji(player.role)}</span>}
+                    {isMvgPlayer(player.id) && <span className="text-amber-500">💎</span>}
                     {player.role !== 'Spieler' && (
                       <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-yellow-100 text-yellow-800">{player.role}</span>
+                    )}
+                    {isMvgPlayer(player.id) && (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">{mvgLabel}</span>
                     )}
                   </div>
                   {player.alias && <div className="text-sm text-gray-500 italic truncate">"{player.alias}"</div>}
@@ -196,11 +204,15 @@ export const Spieler: React.FC = () => {
                     <h2 className="text-2xl font-bold flex items-center gap-2">
                       {selectedPlayer.name}
                       {getRoleEmoji(selectedPlayer.role) && <span className="text-yellow-300">{getRoleEmoji(selectedPlayer.role)}</span>}
+                      {isMvgPlayer(selectedPlayer.id) && <span className="text-amber-200">💎</span>}
                     </h2>
                     {selectedPlayer.alias && <p className="text-white/80 italic">"{selectedPlayer.alias}"</p>}
                     <div className="flex flex-wrap items-center gap-2 mt-1">
                       {selectedPlayer.role !== 'Spieler' && (
                         <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-400 text-yellow-900">{selectedPlayer.role}</span>
+                      )}
+                      {isMvgPlayer(selectedPlayer.id) && (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-200 text-amber-900">{mvgLabel}</span>
                       )}
                       <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-white/20">{selectedPlayer.gemschigrad}</span>
                       <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-white/20">{selectedPlayer.klassierung}</span>
