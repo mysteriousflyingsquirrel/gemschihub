@@ -1,4 +1,4 @@
-# spec-100-data-storage.md
+# data-storage.md
 ## GemschiHub — Data Storage & Persistence
 
 ## 1) Purpose
@@ -84,7 +84,7 @@ This implies:
 - Public users:
   - Must never be able to write persistent data
 - Admin-only writes must be protected by:
-  - Authentication (see `spec-090-authentication.md`)
+  - Authentication (see `authentication.md`)
   - Storage-level access control (where supported)
 
 The storage layer must not trust UI checks alone.

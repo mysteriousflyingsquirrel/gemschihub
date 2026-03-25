@@ -1,4 +1,4 @@
-# spec-030-roster-players.md
+# roster-players.md
 ## GemschiHub — Team Roster & Player Profiles
 
 ## 1) Purpose
@@ -73,7 +73,7 @@ Player stats are derived from:
 - Interclub match participation and results
 - Spirit value (manual input)
 
-> Exact stat formulas are defined in `spec-050-statistics.md`.
+> Exact stat formulas are defined in `statistics.md`.
 
 ---
 

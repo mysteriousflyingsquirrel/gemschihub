@@ -1,4 +1,4 @@
-# spec-070-admin-management.md
+# admin-management.md
 ## GemschiHub — Admin (Captain) Management
 
 ## 1) Purpose

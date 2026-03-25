@@ -1,4 +1,4 @@
-# spec-040-interclub-results.md
+# interclub-results.md
 ## GemschiHub — Interclub Results & Match Scoring
 
 ## 1) Purpose
@@ -135,7 +135,7 @@ This spec does NOT define:
 - UI for result entry
 - Validation of real-world badminton rules
 - Tie-break rules within sets
-- Statistical calculations (see `spec-060-statistics.md`)
+- Statistical calculations (see `statistics.md`)
 
 ---
 

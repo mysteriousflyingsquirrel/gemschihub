@@ -1,4 +1,4 @@
-# spec-080-nonfunctional.md
+# nonfunctional.md
 ## GemschiHub — Non-Functional Requirements
 
 ## 1) Purpose

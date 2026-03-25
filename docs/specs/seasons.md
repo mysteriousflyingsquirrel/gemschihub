@@ -1,4 +1,4 @@
-# spec-010-seasons.md  
+# seasons.md  
 ## GemschiHub — Seasons
 
 ## 1) Purpose

@@ -6,61 +6,27 @@ alwaysApply: true
 # Core Workflow
 
 ## 1) Create Issue
+- Delegate this stage to `/create-issue`.
 - Treat issue creation as capture of a raw idea.
 - Keep wording close to the user text.
 - Apply only light grammar/clarity cleanup.
 - Do not ask clarifying questions at issue creation.
 - Do not generate full specs in this stage.
-- When the user says "create an issue", create a real GitHub issue in the current repository (not only a draft in chat).
-- Use `gh issue create` by default and return the created issue URL.
-- If critical fields are missing (title/body), ask only for those missing fields.
-- If `gh` is unavailable or not authenticated, resolve installation/authentication first, then create the issue.
-- After creating the issue, set state label to `state:created` and remove any other `state:*` labels.
 
 ## 2) Plan Issue
-- Planning is the main thinking stage.
-- Planning is the highest-priority quality gate in this workflow.
-- For planning, use the highest-reasoning model available.
-- Prefer deeper analysis in planning than in implementation (more repo reading, trade-off analysis, and risk checks).
-- Read the repository before proposing a plan.
-- Identify impacted files and frontend/backend surfaces.
-- Ask clarifying questions before finalizing the plan when needed.
+- Delegate this stage to `/plan-issue`.
+- Planning is the main thinking stage and the highest-priority quality gate.
+- Prefer deeper analysis in planning than in implementation.
 - Do not implement during planning.
-- If the user says "Plan issue #<N>", plan the actual GitHub issue number `<N>` in the current repository.
-- Use `gh issue view <N>` to fetch issue details when needed.
-- Include the issue number and URL in the plan output.
-- After finalizing the plan, post it to the same issue as a markdown comment using `gh issue comment <N> --body ...`.
-- When planning starts for an issue, set state label to `state:planned` and remove any other `state:*` labels.
-- Use this markdown structure for issue plan comments:
-  - `## Plan`
-  - `## Affected Files`
-  - `## Documentation Impact`
-  - `## Open Questions`
-  - `## Risks`
-- If issue fetch or comment posting fails, report the failure clearly and provide the full markdown plan in chat for manual posting.
 
 ## 3) Implement Issue
+- Delegate this stage to `/implement-issue`.
 - Implement only after plan approval.
-- Before starting new work, check branch/PR freshness:
-  - If current branch has a PR that is `merged` or `closed`, do not continue on that branch.
-  - Create a new feature branch from latest `master` and open a new PR for new commits.
-  - Keep one active change stream per branch/PR pair.
-- If the user says "Implement issue #<N>", implement the actual GitHub issue number `<N>` in the current repository.
-- Use the latest approved plan from that issue's comments as the implementation source of truth.
-- Do not implement unless the issue has label `state:planned`.
-- If no approved plan exists on the issue, do not implement; switch to planning flow first.
-- If multiple plan comments exist, use the newest explicitly approved one; otherwise ask which plan to apply.
-- If multiple `state:*` labels are present, normalize to exactly one state label before proceeding.
-- Keep implementation aligned to that plan; if scope changes are needed, update the plan comment before coding.
-- Before coding, move issue state from `state:planned` to `state:in-progress`.
-- Create a feature branch before coding.
-- Follow existing repository patterns.
 - Keep changes minimal, focused, and clean.
 - Documentation is part of done: update docs whenever behavior, requirements, or acceptance criteria change.
 - Use canonical docs only:
   - `docs/requirements/requirements.md`
-  - `docs/specs/spec-*.md`
-  - `docs/specs/index.md` (when index/coverage changes)
+  - `docs/specs/*.md`
 - Open a PR after implementation.
 - In every PR, include `## Documentation Impact` with either:
   - updated doc file paths, or

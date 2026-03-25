@@ -1,4 +1,4 @@
-# spec-060-notifications.md
+# notifications.md
 ## GemschiHub — Push Notifications
 
 ## 1) Purpose

@@ -1,4 +1,4 @@
-# spec-090-authentication.md
+# authentication.md
 ## GemschiHub — Admin Authentication (Captain)
 
 ## 1) Purpose
@@ -71,7 +71,7 @@ Logout:
 - Admin-only actions (CRUD for seasons, events, attendance, results, players, Spirit) must be protected by:
   - UI gating (hide admin UI)
   - Route protection (deny admin routes)
-  - Data write protection (see `spec-100-data-storage.md`)
+  - Data write protection (see `data-storage.md`)
 
 Public users must not be able to write data.
 

@@ -1,4 +1,4 @@
-# spec-050-statistics.md
+# statistics.md
 ## GemschiHub — Statistics & Gemschi Score
 
 ## 1) Purpose

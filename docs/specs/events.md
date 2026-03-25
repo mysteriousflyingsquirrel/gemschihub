@@ -1,4 +1,4 @@
-# spec-020-events.md
+# events.md
 ## GemschiHub — Events (Training, Interclub, Spirit)
 
 ## 1) Purpose
@@ -30,7 +30,7 @@ Spirit events are general team events such as:
 ## 3) Global Event Rules
 
 For all event types:
-- Every event belongs to **exactly one season** (see `spec-010-seasons.md`)
+- Every event belongs to **exactly one season** (see `seasons.md`)
 - Events are **publicly visible**
 - Public users have **read-only** access
 - **Attendance is tracked** for all events
@@ -92,7 +92,7 @@ Attendance answers: **Who was present at this event?**
 ### Participation vs Attendance (Interclub only)
 - **Attendance**: present at the Interclub event
 - **Participation**: played singles/doubles in that Interclub event  
-  (participation is defined in `spec-040-interclub-results.md`)
+  (participation is defined in `interclub-results.md`)
 
 ---
 
@@ -110,7 +110,7 @@ Rules:
 
 Interclub events additionally have a **match status**:
 - Offen / Am Spielen / Gespielt  
-(defined in `spec-040-interclub-results.md`)
+(defined in `interclub-results.md`)
 
 ---
 
@@ -124,7 +124,7 @@ For Interclub events, additional notifications may exist:
 - Live ticker updates  
 (e.g. “Gemscheni just won a match!”)
 
-Detailed notification triggers and wording are defined in `spec-060-notifications.md`.
+Detailed notification triggers and wording are defined in `notifications.md`.
 
 ---
 
@@ -145,7 +145,7 @@ This spec does NOT define:
 - Exact data schema / field names
 - Notification scheduling/logic
 - Interclub scoring rules  
-(see `spec-040-interclub-results.md`)
+(see `interclub-results.md`)
 
 ---
 
