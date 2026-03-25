@@ -29,6 +29,15 @@ GemschiHub supports push notifications on:
 
 ---
 
+## 2.1) App Update Delivery (PWA)
+
+- GemschiHub must deliver new frontend versions without requiring app reinstall.
+- On supported browsers/PWA contexts, a user should receive updates by refresh/reopen.
+- If a new version requires service worker activation, the app should provide an in-app update prompt (apply now or later).
+- Update delivery is best-effort and subject to platform cache/service worker behavior.
+
+---
+
 ## 3) Permission Model
 
 - Notification permission must be explicitly granted by the user
@@ -113,3 +122,4 @@ This spec is implemented when:
 - Notifications are sent for all event types
 - Interclub live updates trigger notifications
 - Notifications respect platform constraints
+- New app versions can be adopted without uninstall/reinstall on Android and iOS PWA

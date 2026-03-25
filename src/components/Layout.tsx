@@ -3,6 +3,7 @@ import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { NotificationPrompt } from './NotificationPrompt';
 import { ForegroundNotifications } from './ForegroundNotifications';
+import { AppUpdatePrompt } from './AppUpdatePrompt';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -35,6 +36,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
       </main>
       <NotificationPrompt />
+      <AppUpdatePrompt />
       <ForegroundNotifications />
     </div>
   );

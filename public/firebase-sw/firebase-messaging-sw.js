@@ -1,0 +1,56 @@
+/* eslint-disable no-undef */
+// Firebase messaging service worker.
+// This file is scoped to /firebase-sw/ to avoid conflicts with the app update SW.
+
+importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
+
+// Firebase config — keep in sync with firebaseConfig.ts
+// These values are NOT secrets (they are public identifiers).
+firebase.initializeApp({
+  apiKey: "AIzaSyClAfUw97U3wtOUKqIYwzdEfjSoUSyhTpo",
+  authDomain: "gemschihub.firebaseapp.com",
+  projectId: "gemschihub",
+  storageBucket: "gemschihub.firebasestorage.app",
+  messagingSenderId: "654765415480",
+  appId: "1:654765415480:web:5dce1aa3ae54e02a8a9acd",
+});
+
+const messaging = firebase.messaging();
+
+messaging.onBackgroundMessage((payload) => {
+  console.log('[SW] Received background message:', payload);
+
+  const data = payload.data || {};
+  const notificationTitle = data.title || 'GemschiHub';
+  const notificationOptions = {
+    body: data.body || '',
+    icon: '/icon-192.png',
+    badge: '/favicon-32.png',
+    data: data,
+  };
+
+  self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+// Handle notification click
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const urlToOpen = event.notification?.data?.url || '/';
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // If a window is already open, focus it
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      // Otherwise, open a new window
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(urlToOpen);
+      }
+    })
+  );
+});
