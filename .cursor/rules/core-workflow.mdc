@@ -1,0 +1,90 @@
+---
+description: Minimal deterministic workflow for issue creation, planning, implementation, ask mode, and tiny direct changes.
+alwaysApply: true
+---
+
+# Core Workflow
+
+## 1) Create Issue
+- Treat issue creation as capture of a raw idea.
+- Keep wording close to the user text.
+- Apply only light grammar/clarity cleanup.
+- Do not ask clarifying questions at issue creation.
+- Do not generate full specs in this stage.
+- When the user says "create an issue", create a real GitHub issue in the current repository (not only a draft in chat).
+- Use `gh issue create` by default and return the created issue URL.
+- If critical fields are missing (title/body), ask only for those missing fields.
+- If `gh` is unavailable or not authenticated, resolve installation/authentication first, then create the issue.
+- After creating the issue, set state label to `state:created` and remove any other `state:*` labels.
+
+## 2) Plan Issue
+- Planning is the main thinking stage.
+- Read the repository before proposing a plan.
+- Identify impacted files and frontend/backend surfaces.
+- Ask clarifying questions before finalizing the plan when needed.
+- Do not implement during planning.
+- If the user says "Plan issue #<N>", plan the actual GitHub issue number `<N>` in the current repository.
+- Use `gh issue view <N>` to fetch issue details when needed.
+- Include the issue number and URL in the plan output.
+- After finalizing the plan, post it to the same issue as a markdown comment using `gh issue comment <N> --body ...`.
+- When planning starts for an issue, set state label to `state:planned` and remove any other `state:*` labels.
+- Use this markdown structure for issue plan comments:
+  - `## Plan`
+  - `## Affected Files`
+  - `## Documentation Impact`
+  - `## Open Questions`
+  - `## Risks`
+- If issue fetch or comment posting fails, report the failure clearly and provide the full markdown plan in chat for manual posting.
+
+## 3) Implement Issue
+- Implement only after plan approval.
+- If the user says "Implement issue #<N>", implement the actual GitHub issue number `<N>` in the current repository.
+- Use the latest approved plan from that issue's comments as the implementation source of truth.
+- Do not implement unless the issue has label `state:planned`.
+- If no approved plan exists on the issue, do not implement; switch to planning flow first.
+- If multiple plan comments exist, use the newest explicitly approved one; otherwise ask which plan to apply.
+- If multiple `state:*` labels are present, normalize to exactly one state label before proceeding.
+- Keep implementation aligned to that plan; if scope changes are needed, update the plan comment before coding.
+- Before coding, move issue state from `state:planned` to `state:in-progress`.
+- Create a feature branch before coding.
+- Follow existing repository patterns.
+- Keep changes minimal, focused, and clean.
+- Documentation is part of done: update docs whenever behavior, requirements, or acceptance criteria change.
+- Use canonical docs only:
+  - `docs/requirements/requirements.md`
+  - `docs/specs/spec-*.md`
+  - `docs/specs/index.md` (when index/coverage changes)
+- Open a PR after implementation.
+- In every PR, include `## Documentation Impact` with either:
+  - updated doc file paths, or
+  - `No doc changes needed` with a short reason.
+- Include issue closing reference (for example `Closes #123`) when applicable.
+- When PR is open, set issue state label to `state:in-review`.
+- When merged/closed, set issue state label to `state:done` only after documentation impact is satisfied.
+- If blocked, set `state:blocked` and do not continue implementation until unblocked.
+
+## Issue Labels
+- Keep exactly one active state label on each issue:
+  - `state:created`
+  - `state:planned`
+  - `state:in-progress`
+  - `state:in-review`
+  - `state:done`
+  - `state:blocked`
+- Use one type label when applicable:
+  - `type:bug`
+  - `type:feature`
+  - `type:chore`
+- Update labels on each workflow transition and remove superseded state labels.
+- Missing type labels are non-blocking warnings, not implementation blockers.
+
+## 4) Ask About Repo
+- Provide repository-aware answers and explanations.
+- Do not make code changes unless explicitly requested.
+
+## 5) Direct Implement (Tiny Tasks)
+- Direct implement is allowed only for very small, obvious, low-risk changes (see `tiny-direct-implement.mdc`).
+- Direct implement may skip Create Issue + Plan Issue, but still uses the same delivery discipline:
+  - feature branch
+  - PR
+  - include `Closes #X` when an issue exists
