@@ -19,6 +19,9 @@ alwaysApply: true
 
 ## 2) Plan Issue
 - Planning is the main thinking stage.
+- Planning is the highest-priority quality gate in this workflow.
+- For planning, use the highest-reasoning model available.
+- Prefer deeper analysis in planning than in implementation (more repo reading, trade-off analysis, and risk checks).
 - Read the repository before proposing a plan.
 - Identify impacted files and frontend/backend surfaces.
 - Ask clarifying questions before finalizing the plan when needed.

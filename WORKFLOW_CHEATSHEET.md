@@ -35,6 +35,11 @@ Prompt:
 Plan issue #<N>
 ```
 
+Planning priority:
+- planning is the most important quality gate
+- use the highest-reasoning model available
+- do deeper analysis here than during implementation
+
 Plan comment format must include:
 - `## Plan`
 - `## Affected Files`
