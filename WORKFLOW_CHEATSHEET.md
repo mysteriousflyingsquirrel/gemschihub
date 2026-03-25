@@ -59,6 +59,11 @@ Prompt:
 Implement issue #<N>
 ```
 
+Branch/PR freshness check (before coding):
+1. check whether current branch PR is open or already merged/closed
+2. if merged/closed, create a new feature branch from latest `master`
+3. use a new PR for the new work (do not append commits to old merged PR branches)
+
 Expected sequence:
 1. use latest approved plan from issue comments
 2. move label to `state:in-progress`
