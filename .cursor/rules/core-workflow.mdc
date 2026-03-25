@@ -19,6 +19,9 @@ alwaysApply: true
 
 ## 2) Plan Issue
 - Planning is the main thinking stage.
+- Planning is the highest-priority quality gate in this workflow.
+- For planning, use the highest-reasoning model available.
+- Prefer deeper analysis in planning than in implementation (more repo reading, trade-off analysis, and risk checks).
 - Read the repository before proposing a plan.
 - Identify impacted files and frontend/backend surfaces.
 - Ask clarifying questions before finalizing the plan when needed.
@@ -38,6 +41,10 @@ alwaysApply: true
 
 ## 3) Implement Issue
 - Implement only after plan approval.
+- Before starting new work, check branch/PR freshness:
+  - If current branch has a PR that is `merged` or `closed`, do not continue on that branch.
+  - Create a new feature branch from latest `master` and open a new PR for new commits.
+  - Keep one active change stream per branch/PR pair.
 - If the user says "Implement issue #<N>", implement the actual GitHub issue number `<N>` in the current repository.
 - Use the latest approved plan from that issue's comments as the implementation source of truth.
 - Do not implement unless the issue has label `state:planned`.

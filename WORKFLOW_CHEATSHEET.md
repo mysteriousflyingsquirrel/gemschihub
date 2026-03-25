@@ -35,6 +35,11 @@ Prompt:
 Plan issue #<N>
 ```
 
+Planning priority:
+- planning is the most important quality gate
+- use the highest-reasoning model available
+- do deeper analysis here than during implementation
+
 Plan comment format must include:
 - `## Plan`
 - `## Affected Files`
@@ -53,6 +58,11 @@ Prompt:
 ```text
 Implement issue #<N>
 ```
+
+Branch/PR freshness check (before coding):
+1. check whether current branch PR is open or already merged/closed
+2. if merged/closed, create a new feature branch from latest `master`
+3. use a new PR for the new work (do not append commits to old merged PR branches)
 
 Expected sequence:
 1. use latest approved plan from issue comments
