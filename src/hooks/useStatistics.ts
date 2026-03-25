@@ -31,12 +31,19 @@ export interface TeamSeasonStats {
   averageGemschiScore: number;
 }
 
+function extractSelectedSeasonYear(seasonName?: string): number {
+  if (!seasonName) return new Date().getFullYear();
+  const matches = seasonName.match(/\d{4}/g);
+  if (!matches || matches.length === 0) return new Date().getFullYear();
+  return Number(matches[matches.length - 1]);
+}
+
 /**
  * Compute all statistics from seasonal inputs.
  * Statistics are NEVER stored — always derived.
  */
 export function useStatistics() {
-  const { selectedSeasonId } = useSeasons();
+  const { selectedSeasonId, selectedSeason } = useSeasons();
   const { events } = useEvents();
   const { attendance } = useAttendance();
   const { spirit } = useSpirit();
@@ -172,5 +179,30 @@ export function useStatistics() {
     };
   }, [interclubEvents, playerStats]);
 
-  return { playerStats, teamStats, getPlayerStats: (id: string) => playerStats.find(s => s.playerId === id) };
+  const mvgPlayerIds = useMemo((): string[] => {
+    if (playerStats.length === 0) return [];
+
+    const maxScore = Math.max(...playerStats.map((ps) => ps.gemschiScore));
+    if (maxScore <= 0) return [];
+
+    return playerStats
+      .filter((ps) => ps.gemschiScore === maxScore)
+      .map((ps) => ps.playerId);
+  }, [playerStats]);
+
+  const mvgYear = useMemo(
+    () => extractSelectedSeasonYear(selectedSeason?.name),
+    [selectedSeason?.name]
+  );
+
+  const mvgLabel = useMemo(() => `MVG of ${mvgYear}`, [mvgYear]);
+
+  return {
+    playerStats,
+    teamStats,
+    mvgPlayerIds,
+    mvgLabel,
+    isMvgPlayer: (id: string) => mvgPlayerIds.includes(id),
+    getPlayerStats: (id: string) => playerStats.find(s => s.playerId === id),
+  };
 }

@@ -46,6 +46,12 @@ Each player profile must expose the following public information:
   - Spieler
   - Captain
   - CEO of Patchio
+- MVG distinction:
+  - Is not a manually assignable role
+  - Is derived automatically from seasonal Gemschi Score
+  - Is assigned to all players with the exact highest Gemschi Score in the selected season
+  - Is assigned to no player when the highest Gemschi Score is `0`
+  - Is displayed as: `MVG of <selected season year>`
 - Gemschigrad
 - Klassierung
 
@@ -98,6 +104,7 @@ Only the Captain can manage players.
 ### Constraints
 - There may be **only one Captain** at any given time.
 - Assigning the Captain role to a player removes it from the previous Captain.
+- MVG is computed automatically and cannot be assigned manually by Captain.
 
 ---
 

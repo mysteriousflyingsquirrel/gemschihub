@@ -9,6 +9,7 @@ import { useAttendance } from '../contexts/AttendanceContext';
 import { useSpirit } from '../contexts/SpiritContext';
 import { useInfo } from '../contexts/InfoContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useStatistics } from '../hooks/useStatistics';
 import { AppEvent, EventType, SinglesGame, DoublesGame, createEmptySinglesGames, createEmptyDoublesGames, formatEventDateDisplay, getEventStartDate } from '../types/event';
 import { Player, Gemschigrad, Klassierung, PlayerRole } from '../types/player';
 import { sendNotificationToAll } from '../services/notifications';
@@ -126,6 +127,7 @@ export const Admin: React.FC = () => {
   const { getEventAttendees, setEventAttendance } = useAttendance();
   const { spirit, setPlayerSpirit } = useSpirit();
   const { tenueData, addTenueItem, updateTenueItem, removeTenueItem } = useInfo();
+  const { isMvgPlayer, mvgLabel } = useStatistics();
 
   // --- Season form ---
   const [newSeasonName, setNewSeasonName] = useState('');
@@ -526,7 +528,16 @@ export const Admin: React.FC = () => {
               <div key={player.id} className="p-4 bg-chnebel-gray rounded-lg border border-gray-200">
                 <div className="mb-2">
                   <div className="font-medium text-chnebel-black">{player.name} {player.alias && <span className="text-gray-500 italic text-sm">"{player.alias}"</span>}</div>
-                  <div className="text-sm text-gray-500">{player.role} · {player.gemschigrad} · {player.klassierung}</div>
+                  <div className="text-sm text-gray-500 flex items-center gap-2 flex-wrap">
+                    <span>{player.role}</span>
+                    {isMvgPlayer(player.id) && (
+                      <>
+                        <span className="text-amber-500">💎</span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">{mvgLabel}</span>
+                      </>
+                    )}
+                    <span>· {player.gemschigrad} · {player.klassierung}</span>
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-2 justify-end">
                   <button onClick={() => openEditPlayerModal(player)} className="px-3 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600" title="Bearbeiten">✏️</button>
