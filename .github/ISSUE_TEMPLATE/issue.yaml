@@ -1,6 +1,6 @@
 name: "Issue (Feature / Bug / Chore)"
 description: "Create a structured issue with minimal input for planning"
-title: "[TYPE]: "
+title: ""
 labels: ["status:needs-plan"]
 body:
 
