@@ -1,0 +1,56 @@
+name: "Issue (Feature / Bug / Chore)"
+description: "Create a structured issue with minimal input for planning"
+title: "[TYPE]: "
+labels: ["status:needs-plan"]
+body:
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      description: What kind of issue is this?
+      options:
+        - Feature
+        - Bug
+        - Chore
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / Goal
+      description: What are you trying to achieve?
+      placeholder: Describe the problem or goal clearly
+    validations:
+      required: true
+
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Expected Outcome
+      description: What should exist or work after this is done?
+      placeholder: Describe the desired end state
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria (rough)
+      description: Bullet points, even if incomplete
+      placeholder: |
+        - [ ] 
+        - [ ] 
+        - [ ] 
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Links, screenshots, notes, ideas
+      placeholder: Optional additional context
+    validations:
+      required: false
