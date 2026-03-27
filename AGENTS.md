@@ -1,5 +1,33 @@
 # AGENTS.md
 
+## Project Context
+- Frontend: React + TypeScript + Vite PWA at repo root.
+- Backend: Firebase Cloud Functions in `functions/`.
+- Package manager: npm.
+
+## Default Engineering Workflow
+1. Work from a GitHub issue.
+2. Plan before implementation.
+3. Implement only approved scope.
+4. Open a PR with `Closes #<issue>`.
+5. Keep docs in sync with behavior changes.
+
+## Label Model
+- Type: `type:feature`, `type:bug`, `type:chore`
+- Status: `status:needs-plan`, `status:awaiting-clarification`, `status:planned`,
+  `status:approved-for-implementation`, `status:in-implementation`,
+  `status:in-review`, `status:done`
+
+## Quality Gates
+- Run `npm run build` for final verification.
+- Keep new lint warnings/errors out of changed files.
+- Do not commit generated build artifacts.
+
+## Automation
+- Issue labeler enforces initial type/status labels.
+- PR merge workflow sets linked issues to `status:done`.
+# AGENTS.md
+
 ## Cursor Cloud specific instructions
 
 ### Project overview

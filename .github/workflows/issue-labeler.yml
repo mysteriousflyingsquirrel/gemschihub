@@ -1,0 +1,46 @@
+name: Issue Labeler
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce type and initial status labels
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const body = (issue.body || "").toLowerCase();
+
+            let typeLabel = null;
+            if (body.includes("feature")) typeLabel = "type:feature";
+            else if (body.includes("bug")) typeLabel = "type:bug";
+            else if (body.includes("chore")) typeLabel = "type:chore";
+
+            const { data: current } = await github.rest.issues.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number
+            });
+
+            const labels = (current.labels || [])
+              .map((l) => (typeof l === "string" ? l : l.name))
+              .filter(Boolean)
+              .filter((name) => !name.startsWith("type:") && !name.startsWith("status:"));
+
+            if (typeLabel) labels.push(typeLabel);
+            labels.push("status:needs-plan");
+
+            await github.rest.issues.setLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              labels
+            });

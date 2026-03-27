@@ -1,4 +1,38 @@
 ---
+description: Clean workflow baseline for issue-driven delivery.
+alwaysApply: true
+---
+
+# Core Workflow
+
+## Golden Path
+- Create or use an issue before implementation.
+- Plan first, implement second.
+- Keep exactly one `type:*` and one `status:*` label on each issue.
+- Open a PR for all non-trivial changes.
+
+## Labels
+- Type labels:
+  - `type:feature`
+  - `type:bug`
+  - `type:chore`
+- Status labels:
+  - `status:needs-plan`
+  - `status:awaiting-clarification`
+  - `status:planned`
+  - `status:approved-for-implementation`
+  - `status:in-implementation`
+  - `status:in-review`
+  - `status:done`
+
+## Status Flow
+- `status:needs-plan` -> `status:awaiting-clarification` <-> `status:planned` -> `status:approved-for-implementation` -> `status:in-implementation` -> `status:in-review` -> `status:done`
+
+## Rules
+- Do not implement if issue is not approved for implementation.
+- Update documentation when behavior or acceptance criteria change.
+- Remove superseded `status:*` labels on every transition.
+---
 description: Minimal deterministic workflow for issue creation, planning, implementation, ask mode, and tiny direct changes.
 alwaysApply: true
 ---
