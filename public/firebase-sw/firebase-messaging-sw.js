@@ -2,8 +2,8 @@
 // Firebase messaging service worker.
 // This file is scoped to /firebase-sw/ to avoid conflicts with the app update SW.
 
-importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/12.12.1/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/12.12.1/firebase-messaging-compat.js');
 
 // Firebase config — keep in sync with firebaseConfig.ts
 // These values are NOT secrets (they are public identifiers).

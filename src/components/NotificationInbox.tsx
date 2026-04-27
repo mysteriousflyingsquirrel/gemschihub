@@ -135,7 +135,8 @@ export const NotificationInbox: React.FC<NotificationInboxProps> = ({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
+      const wrapper = panelRef.current?.parentElement;
+      if (wrapper && !wrapper.contains(event.target as Node)) {
         onClose();
       }
     };
