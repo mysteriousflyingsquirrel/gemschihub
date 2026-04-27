@@ -2,10 +2,12 @@ import {
   addDoc,
   collection,
   deleteField,
+  DocumentData,
   doc,
   getDocs,
   onSnapshot,
   query,
+  UpdateData,
   updateDoc,
   where,
   writeBatch,
@@ -33,7 +35,7 @@ export async function createEvent(eventData: Omit<AppEvent, 'id'>): Promise<AppE
 
 export async function patchEvent(id: string, updates: Partial<AppEvent>): Promise<void> {
   const { id: _id, ...cleanUpdates } = updates as AppEvent;
-  const firestoreUpdates: Record<string, unknown> = {};
+  const firestoreUpdates: UpdateData<DocumentData> = {};
   for (const [key, value] of Object.entries(cleanUpdates)) {
     firestoreUpdates[key] = value === undefined ? deleteField() : value;
   }

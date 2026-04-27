@@ -557,15 +557,27 @@ export const Admin: React.FC = () => {
                 return (
                   <div key={player.id} className="flex items-center gap-4 p-3 bg-chnebel-gray rounded-lg">
                     <span className="font-medium flex-1">{player.name}</span>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={sv}
-                      onChange={e => setPlayerSpirit(player.id, selectedSeasonId, parseInt(e.target.value))}
-                      className="w-32"
-                    />
-                    <span className="w-12 text-right font-semibold text-sm">{sv}%</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPlayerSpirit(player.id, selectedSeasonId, Math.max(0, sv - 1))}
+                        className="w-8 h-8 rounded bg-gray-500 text-white font-bold hover:bg-gray-600 disabled:opacity-50"
+                        aria-label={`Spirit fuer ${player.name} verringern`}
+                        disabled={sv <= 0}
+                      >
+                        -
+                      </button>
+                      <span className="w-14 text-center font-semibold text-sm">{sv}%</span>
+                      <button
+                        type="button"
+                        onClick={() => setPlayerSpirit(player.id, selectedSeasonId, Math.min(100, sv + 1))}
+                        className="w-8 h-8 rounded bg-chnebel-red text-white font-bold hover:bg-[#c4161e] disabled:opacity-50"
+                        aria-label={`Spirit fuer ${player.name} erhoehen`}
+                        disabled={sv >= 100}
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
                 );
               })}

@@ -14,7 +14,7 @@ service cloud.firestore {
     // Keep this list aligned with deployed CAPTAIN_EMAILS.
     function isCaptain() {
       return email() in [
-        "kaufmann.andreas@live.de"
+        "andreas@kfmn.io"
       ];
     }
 
